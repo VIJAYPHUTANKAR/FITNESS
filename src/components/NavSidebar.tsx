@@ -16,7 +16,7 @@ const NAV_ITEMS = [
   { href: '/dashboard',        label: 'Dashboard',        icon: LayoutDashboard },
   { href: '/log/food',         label: 'Log Food',         icon: Utensils },
   { href: '/log/exercise',     label: 'Log Exercise',     icon: Activity },
-  { href: '/burn-calculator',  label: 'Burn Calculator',  icon: Flame },
+  { href: '/burn-calculator',  label: 'Activity Equivalents',  icon: Flame },
   { href: '/history',          label: 'History',          icon: CalendarDays },
   { href: '/profile',          label: 'Profile',          icon: User },
 ];

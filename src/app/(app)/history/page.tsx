@@ -142,7 +142,7 @@ export default function HistoryPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">History & Analytics</h1>
           <p className="text-xs text-gray-500 mt-1">
-            Review past intake trends, calorie balance, and weight progression.
+            Review past intake trends, expenditure, and weight progression.
           </p>
         </div>
 
@@ -206,7 +206,7 @@ export default function HistoryPage() {
           <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-base font-bold text-gray-900">Calorie Balance vs Goal</h2>
+                <h2 className="text-base font-bold text-gray-900">Daily Intake vs Goal</h2>
                 <p className="text-xs text-gray-500">Daily food intake (green) vs target goal (orange) vs burn (red)</p>
               </div>
               <span className="text-xs text-gray-400 italic">*estimated</span>

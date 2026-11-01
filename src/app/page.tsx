@@ -9,9 +9,9 @@ const features = [
   },
   {
     icon: '🔥',
-    title: 'Burn Calculator',
+    title: 'Activity Equivalents',
     description:
-      'See exactly how many calories your workouts burn based on your body weight, activity type, and duration.',
+      'See estimated activity duration and energy expenditure based on body weight and activity type.',
   },
   {
     icon: '📈',
@@ -41,7 +41,7 @@ export default function LandingPage() {
 
           <p className="text-xl sm:text-2xl text-emerald-100 max-w-xl mx-auto leading-relaxed">
             Track what you eat.&nbsp;
-            <span className="text-white font-semibold">See what to burn.</span>
+            <span className="text-white font-semibold">Understand your energy.</span>
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
@@ -69,7 +69,7 @@ export default function LandingPage() {
           </h2>
           <p className="text-center text-gray-500 mb-14 text-lg max-w-2xl mx-auto">
             Simple, science-backed tools to keep your nutrition and activity in
-            perfect balance.
+            healthy alignment.
           </p>
 
           <div className="grid sm:grid-cols-3 gap-8">

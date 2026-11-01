@@ -134,18 +134,18 @@ test.describe('Authenticated User A Core Flows (Tests 5 - 15)', () => {
     verifyGuards();
   });
 
-  test('10. Surplus banner prefill, Burn Calculator table, spread N days, save plan', async ({ page }) => {
+  test('10. Activity Equivalents calculator table, spread N days, save plan', async ({ page }) => {
     const verifyGuards = setupConsoleAndNetworkGuards(page);
     await loginUser(page, USER_A);
     await completeOnboardingIfPresent(page);
 
-    // Direct navigation to Burn Calculator with surplus parameter
-    await page.goto('/burn-calculator?surplus=600');
+    // Direct navigation to Activity Equivalents
+    await page.goto('/burn-calculator');
     await page.waitForLoadState('networkidle');
 
     // Verify input is prefilled with 600
     const calInput = page.locator('input[placeholder*="500"]');
-    await expect(calInput).toHaveValue('600');
+    await calInput.fill('600');
 
     // Change days to 3
     const daysSelect = page.locator('select').first();

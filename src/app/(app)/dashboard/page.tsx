@@ -4,7 +4,6 @@ import { todayISO, formatDate } from '@/lib/utils';
 import {
   calculateEnergyBalance,
   getProfileBMR,
-  surplusToFatKg,
 } from '@/lib/calc/bmr';
 import { CalorieRing } from '@/components/CalorieRing';
 import { MacroBar } from '@/components/MacroBar';
@@ -18,7 +17,6 @@ import {
   AlertCircle,
   ChevronRight,
   TrendingDown,
-  Sparkles,
   Info,
 } from 'lucide-react';
 
@@ -62,17 +60,15 @@ export default async function DashboardPage() {
   const goal = profile?.daily_calorie_goal ?? 2000;
   const bmr = getProfileBMR(profile);
 
-  // Energy Balance model: baselineMaintenance (BMR * 1.2) + logged exercise
+  // Energy model: baselineMaintenance (BMR * 1.2) + logged exercise
   const {
     vsGoal,
     baselineMaintenance,
     energyBalance,
-    caloriesToBurn,
     hasProfileMetrics,
   } = calculateEnergyBalance(caloriesIn, goal, bmr, caloriesOut);
 
   const netCalories = caloriesIn - caloriesOut;
-  const fatEquivalentKg = Math.abs(surplusToFatKg(energyBalance)).toFixed(2);
 
   // Macros
   const proteinG = Math.round(logs.reduce((sum, item) => sum + Number(item.protein_g ?? 0), 0));
@@ -140,7 +136,7 @@ export default async function DashboardPage() {
           <p className="text-xs text-gray-400 mt-2 font-medium">Daily budget: {goal} kcal</p>
         </div>
 
-        {/* Macros & Energy Balance */}
+        {/* Macros & Net Energy */}
         <div className="flex flex-col justify-center space-y-4 lg:col-span-2">
           <div>
             <h2 className="text-base font-semibold text-gray-900">Macronutrients</h2>
@@ -148,7 +144,7 @@ export default async function DashboardPage() {
           </div>
           <MacroBar proteinG={proteinG} carbsG={carbsG} fatG={fatG} />
 
-          {/* Energy Balance & Surplus Banner */}
+          {/* Net Energy & Surplus Banner */}
           <div className="mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-3">
             <div className="flex items-start justify-between flex-wrap gap-3">
               <div className="flex items-start gap-3">
@@ -168,7 +164,7 @@ export default async function DashboardPage() {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      Estimated energy balance (baseline + logged exercise)
+                      Estimated Net Energy (baseline + logged exercise)
                     </span>
                     {hasProfileMetrics ? (
                       energyBalance > 0 ? (
@@ -198,7 +194,6 @@ export default async function DashboardPage() {
                       <p>
                         Intake ({caloriesIn} kcal) &minus; [Baseline Maintenance ({baselineMaintenance} kcal) + Exercise ({caloriesOut} kcal)] ={' '}
                         <strong>{energyBalance > 0 ? `+${energyBalance} kcal` : `${energyBalance} kcal`}</strong>
-                        {energyBalance > 0 && ` (~${fatEquivalentKg} kg fat equivalent)`}
                       </p>
                       <div className="flex items-center gap-1 text-[11px] text-gray-400">
                         <Info className="h-3.5 w-3.5 shrink-0" />
@@ -214,15 +209,6 @@ export default async function DashboardPage() {
                   )}
                 </div>
               </div>
-
-              {caloriesToBurn > 0 && hasProfileMetrics && (
-                <Link
-                  href={`/burn-calculator?surplus=${caloriesToBurn}`}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 rounded-xl transition-colors border border-emerald-300 shadow-2xs shrink-0"
-                >
-                  <Sparkles className="h-4 w-4 text-emerald-700" /> Burn {caloriesToBurn} kcal
-                </Link>
-              )}
             </div>
           </div>
         </div>

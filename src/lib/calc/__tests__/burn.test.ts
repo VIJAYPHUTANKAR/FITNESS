@@ -1,6 +1,7 @@
 // src/lib/calc/__tests__/burn.test.ts
 import { calculateBurnPlan, formatDuration, suggestDays } from '../burn';
 import type { Exercise } from '../burn';
+import { BurnPlanFormSchema } from '@/lib/validation/schemas';
 
 const mockExercises: Exercise[] = [
   { id: 1, name: 'Running (8 km/h)', category: 'cardio', met: 8.3, intensity: 'high', equipment_needed: false },
@@ -108,5 +109,43 @@ describe('suggestDays', () => {
   test('handles null or invalid weight without crashing', () => {
     expect(suggestDays(500, null, mockExercises)).toBe(1);
     expect(suggestDays(500, 0, mockExercises)).toBe(1);
+  });
+});
+
+describe('BurnPlanFormSchema caps', () => {
+  test('accepts valid plan under 2,000 kcal and under daily limits', () => {
+    const res = BurnPlanFormSchema.safeParse({
+      calories_to_burn: 600,
+      days: 2,
+      plan: [{ minutesPerDay: 40 }],
+    });
+    expect(res.success).toBe(true);
+  });
+
+  test('rejects plan over 2,000 kcal total', () => {
+    const res = BurnPlanFormSchema.safeParse({
+      calories_to_burn: 2500,
+      days: 5,
+      plan: [{ minutesPerDay: 30 }],
+    });
+    expect(res.success).toBe(false);
+  });
+
+  test('rejects plan exceeding 1,000 kcal/day cap', () => {
+    const res = BurnPlanFormSchema.safeParse({
+      calories_to_burn: 1500,
+      days: 1, // 1500 kcal in 1 day > 1000
+      plan: [{ minutesPerDay: 50 }],
+    });
+    expect(res.success).toBe(false);
+  });
+
+  test('rejects plan where an activity exceeds 120 min/day cap', () => {
+    const res = BurnPlanFormSchema.safeParse({
+      calories_to_burn: 800,
+      days: 1,
+      plan: [{ minutesPerDay: 135 }],
+    });
+    expect(res.success).toBe(false);
   });
 });

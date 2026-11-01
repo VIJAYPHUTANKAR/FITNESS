@@ -100,12 +100,28 @@ export const WeightLogFormSchema = z.object({
     .max(500, 'Weight cannot exceed 500 kg'),
 });
 
-// ── Burn Plan Schema ────────────────────────────────────────────────────────
-export const BurnPlanFormSchema = z.object({
-  calories_to_burn: z
-    .number()
-    .positive('Calories to burn must be greater than 0')
-    .max(50000, 'Calories to burn cannot exceed 50,000 kcal'),
-  days: z.number().int().min(1).max(90),
-  plan: z.array(z.any()),
-});
+// ── Burn Plan / Activity Plan Schema ───────────────────────────────────────
+export const BurnPlanFormSchema = z
+  .object({
+    calories_to_burn: z
+      .number({ message: 'Calories must be a number' })
+      .positive('Calories must be greater than 0')
+      .max(2000, 'Calories cannot exceed 2,000 kcal'),
+    days: z.number().int().min(1).max(30),
+    plan: z.array(z.any()),
+  })
+  .refine((data) => data.calories_to_burn / data.days <= 1000, {
+    message: 'Plan exceeds daily cap of 1,000 kcal per day',
+  })
+  .refine(
+    (data) => {
+      if (!Array.isArray(data.plan)) return true;
+      return !data.plan.some(
+        (p: { minutesPerDay?: number; minutes?: number }) =>
+          (p.minutesPerDay ?? p.minutes ?? 0) > 120
+      );
+    },
+    {
+      message: 'Plan exceeds daily cap of 120 minutes per day for one or more activities',
+    }
+  );

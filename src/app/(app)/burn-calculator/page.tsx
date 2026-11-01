@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { AlertTriangle, Info, Bookmark, Trash2, ShieldAlert } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -10,21 +10,16 @@ import {
   type BurnResult,
   type Exercise,
 } from '@/lib/calc/burn';
-import { surplusToFatKg } from '@/lib/calc/bmr';
 import { formatSupabaseError } from '@/lib/utils';
 import { BurnPlanFormSchema } from '@/lib/validation/schemas';
 import BurnTable from '@/components/BurnTable';
 import type { Profile, BurnPlan } from '@/types/database';
 
 function BurnCalculatorInner() {
-  const searchParams = useSearchParams();
   const router = useRouter();
   const supabase = createClient();
 
-  const surplusParam = searchParams.get('surplus');
-  const [calories, setCalories] = useState<number>(
-    surplusParam ? Math.max(0, Math.round(Number(surplusParam))) : 500,
-  );
+  const [calories, setCalories] = useState<number>(500);
   const [days, setDays] = useState<number>(1);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -100,11 +95,19 @@ function BurnCalculatorInner() {
     setDays(suggested);
   }, [calories, profile, exercises]);
 
-  const hasExtreme = results.some((r) => r.isUnrealistic);
-  const fatEquivalentG = Math.round(surplusToFatKg(calories) * 1000);
+  const isExceedingDailyCap = useMemo(() => {
+    if (calories <= 0 || days <= 0) return false;
+    if (calories / days > 1000) return true;
+    return results.some((r) => (r.minutesPerDay ?? r.minutes) > 120);
+  }, [calories, days, results]);
 
   const handleSavePlan = useCallback(async () => {
     if (!profile || results.length === 0) return;
+
+    if (isExceedingDailyCap) {
+      setSavedMsg('Cannot save plan: exceeds daily safety cap of 1,000 kcal or 120 minutes per day. Please increase days or reduce calories.');
+      return;
+    }
 
     const validation = BurnPlanFormSchema.safeParse({
       calories_to_burn: calories,
@@ -140,7 +143,7 @@ function BurnCalculatorInner() {
     } else {
       setSavedMsg(formatSupabaseError(error));
     }
-  }, [supabase, profile, calories, days, results, loadSavedPlans]);
+  }, [supabase, profile, calories, days, results, isExceedingDailyCap, loadSavedPlans]);
 
   async function handleDeleteSavedPlan(planId: number) {
     await supabase.from('burn_plans').delete().eq('id', planId);
@@ -150,9 +153,9 @@ function BurnCalculatorInner() {
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Burn Calculator</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Activity Equivalents</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Calculate physical exercise duration to balance calorie intake based on verified MET formulas.
+          Estimated time for common activities to use {calories || 0} calories.
         </p>
       </div>
 
@@ -162,7 +165,7 @@ function BurnCalculatorInner() {
         <div className="space-y-1">
           <p className="font-semibold text-emerald-950">Healthy Relationship with Exercise</p>
           <p>
-            Exercise is for cardiovascular fitness, strength, and mental well-being—<strong>not a tool to punish or compensate for eating</strong>. All numbers here are estimates. If you accumulated a large calorie intake, the healthiest path is simply returning to your normal balanced nutrition rather than over-exercising.
+            Exercise is not a way to make up for eating. If food, body weight, or exercise feels stressful or out of control, talk to a doctor or counselor. All numbers here are estimates.
           </p>
         </div>
       </div>
@@ -189,24 +192,19 @@ function BurnCalculatorInner() {
           {/* Calories input */}
           <div>
             <label className="mb-1.5 block text-xs font-semibold text-gray-700" htmlFor="calories">
-              Calories to Burn (kcal)
+              Calories (kcal, max 2,000)
             </label>
             <input
               id="calories"
               type="number"
               min={1}
-              max={20000}
+              max={2000}
               step={50}
               value={calories || ''}
-              onChange={(e) => setCalories(Math.max(0, Math.min(20000, Number(e.target.value))))}
+              onChange={(e) => setCalories(Math.max(0, Math.min(2000, Number(e.target.value))))}
               placeholder="e.g. 500"
               className="w-full rounded-xl border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             />
-            {calories > 5000 && (
-              <p className="mt-1.5 text-xs text-amber-600 font-medium">
-                ⚠️ Burning &gt;5,000 kcal is extreme for a single session. Auto-suggest will spread this over multiple days.
-              </p>
-            )}
           </div>
 
           {/* Days spinner */}
@@ -238,29 +236,21 @@ function BurnCalculatorInner() {
           </div>
         </div>
 
-        {/* Fat equivalent */}
-        {calories > 0 && (
+        {days > 1 && calories > 0 && (
           <div className="pt-2 border-t border-gray-50 flex items-center justify-between text-xs text-gray-600 flex-wrap gap-2">
-            <p>
-              Energy: <strong className="text-gray-900">{calories} kcal</strong> ≈{' '}
-              <strong className="text-emerald-700">{fatEquivalentG} g</strong> of body fat equivalent{' '}
-              <span className="text-gray-400">(rough approximation: 7,700 kcal ≈ 1 kg fat)</span>
+            <p className="text-gray-500">
+              Paced at <strong className="text-gray-800">{Math.round(calories / days)} kcal/day</strong> across {days} days
             </p>
-            {days > 1 && (
-              <p className="text-gray-500">
-                Paced at <strong className="text-gray-800">{Math.round(calories / days)} kcal/day</strong> across {days} days
-              </p>
-            )}
           </div>
         )}
       </div>
 
-      {/* Extreme exercise warning (>120 min/day) */}
-      {hasExtreme && (
+      {/* Extreme exercise / Cap exceeded warning */}
+      {isExceedingDailyCap && (
         <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 leading-relaxed">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
           <span>
-            <strong>Extreme exertion flagged (&gt;120 min/day):</strong> One or more activities require more than 2 hours per day. We strongly suggest spreading this plan over more days or achieving your calorie deficit primarily via nutrition.
+            <strong>Daily safety cap reached (&gt;1,000 kcal/day or &gt;120 min/day):</strong> Plans exceeding 1,000 kcal/day or 120 minutes of daily activity cannot be saved. Please spread this plan across more days or lower the calorie target.
           </span>
         </div>
       )}
@@ -269,11 +259,12 @@ function BurnCalculatorInner() {
       {results.length > 0 ? (
         <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-gray-900">Exercise Duration Breakdown</h2>
+            <h2 className="text-base font-bold text-gray-900">Activity Duration Breakdown</h2>
             <button
               onClick={handleSavePlan}
-              disabled={saving}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition-colors"
+              disabled={saving || isExceedingDailyCap}
+              title={isExceedingDailyCap ? 'Cannot save: exceeds 1,000 kcal/day or 120 min/day' : undefined}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg border border-emerald-200 transition-colors"
             >
               <Bookmark className="h-3.5 w-3.5" />
               {saving ? 'Saving...' : 'Save this Plan'}

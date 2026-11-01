@@ -4,7 +4,6 @@ import {
   calculateTDEE,
   calculateCalorieGoal,
   ageFromDOB,
-  surplusToFatKg,
   calculateEnergyBalance,
   getProfileBMR,
   getProfileTDEE,
@@ -69,29 +68,27 @@ describe('calculateEnergyBalance (Consistent Energy Model)', () => {
   // baselineMaintenance = BMR * 1.2 = 1800
   const baseline = 1800;
 
-  test('eating at baseline gives energyBalance = 0 and caloriesToBurn = 0', () => {
+  test('eating at baseline gives energyBalance = 0', () => {
     const dailyGoal = 1600; // Deficit goal
     const intake = 1800; // Eating at baseline maintenance
     const res = calculateEnergyBalance(intake, dailyGoal, bmr, 0);
 
     expect(res.baselineMaintenance).toBe(baseline);
     expect(res.energyBalance).toBe(0);
-    expect(res.caloriesToBurn).toBe(0);
     expect(res.vsGoal).toBe(200); // 1800 - 1600 = +200 vs deficit goal
     expect(res.hasProfileMetrics).toBe(true);
   });
 
-  test('eating above baseline gives positive energyBalance and caloriesToBurn > 0', () => {
+  test('eating above baseline gives positive energyBalance', () => {
     const dailyGoal = 1600;
     const intake = 2100; // 300 kcal above baseline
     const res = calculateEnergyBalance(intake, dailyGoal, bmr, 0);
 
     expect(res.energyBalance).toBe(300);
-    expect(res.caloriesToBurn).toBe(300);
     expect(res.vsGoal).toBe(500);
   });
 
-  test('logging exercise reduces the balance and caloriesToBurn', () => {
+  test('logging exercise reduces the balance', () => {
     const dailyGoal = 1600;
     const intake = 2100; // +300 above baseline
     const exerciseBurned = 200;
@@ -99,10 +96,9 @@ describe('calculateEnergyBalance (Consistent Energy Model)', () => {
 
     // 2100 - (1800 + 200) = +100
     expect(res.energyBalance).toBe(100);
-    expect(res.caloriesToBurn).toBe(100);
   });
 
-  test('logging exercise exceeding surplus brings energyBalance negative and caloriesToBurn to 0', () => {
+  test('logging exercise exceeding surplus brings energyBalance negative', () => {
     const dailyGoal = 1800;
     const intake = 2000; // +200 above baseline
     const exerciseBurned = 350;
@@ -110,21 +106,18 @@ describe('calculateEnergyBalance (Consistent Energy Model)', () => {
 
     // 2000 - (1800 + 350) = -150
     expect(res.energyBalance).toBe(-150);
-    expect(res.caloriesToBurn).toBe(0);
   });
 
   test('missing profile returns a safe empty state without crashing', () => {
     const resNull = calculateEnergyBalance(2000, 2000, 0, 0);
     expect(resNull.hasProfileMetrics).toBe(false);
     expect(resNull.energyBalance).toBe(0);
-    expect(resNull.caloriesToBurn).toBe(0);
 
     const bmrEmpty = getProfileBMR(null);
     expect(bmrEmpty).toBe(0);
     const resEmpty = calculateEnergyBalance(2000, 2000, bmrEmpty, 0);
     expect(resEmpty.hasProfileMetrics).toBe(false);
     expect(resEmpty.energyBalance).toBe(0);
-    expect(resEmpty.caloriesToBurn).toBe(0);
   });
 
   test('fat-loss goal does not change energyBalance (independence from deficit target)', () => {
@@ -141,9 +134,6 @@ describe('calculateEnergyBalance (Consistent Energy Model)', () => {
     expect(resA.energyBalance).toBe(resB.energyBalance);
     expect(resB.energyBalance).toBe(resC.energyBalance);
     expect(resA.energyBalance).toBe(2000 - (1800 + 100)); // +100
-    expect(resA.caloriesToBurn).toBe(100);
-    expect(resB.caloriesToBurn).toBe(100);
-    expect(resC.caloriesToBurn).toBe(100);
 
     // but vsGoal differs as intended
     expect(resA.vsGoal).toBe(500);
@@ -169,16 +159,6 @@ describe('getProfileTDEE', () => {
     const tdee = getProfileTDEE(profile);
     expect(tdee).toBeGreaterThan(1800);
     expect(tdee).toBeLessThan(3000);
-  });
-});
-
-describe('surplusToFatKg', () => {
-  test('7700 kcal surplus = 1 kg fat', () => {
-    expect(surplusToFatKg(7700)).toBeCloseTo(1.0, 3);
-  });
-
-  test('10000 kcal surplus ≈ 1.299 kg fat', () => {
-    expect(surplusToFatKg(10000)).toBeCloseTo(1.299, 2);
   });
 });
 

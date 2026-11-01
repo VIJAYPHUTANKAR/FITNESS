@@ -109,23 +109,20 @@ export interface EnergyBalance {
   vsGoal: number;
   /** Baseline sedentary expenditure: BMR * 1.2 (non-exercise baseline) */
   baselineMaintenance: number;
-  /** Intake minus (baselineMaintenance + loggedExerciseBurned). True thermodynamic balance */
+  /** Intake minus (baselineMaintenance + loggedExerciseBurned). Estimated net energy difference */
   energyBalance: number;
-  /** Safe surplus amount to send to burn calculator (energyBalance clamped to >= 0) */
-  caloriesToBurn: number;
   /** Whether the user has complete profile metrics to compute BMR */
   hasProfileMetrics: boolean;
 }
 
 /**
- * Calculates energy balance without double-counting exercise.
+ * Calculates estimated net energy without double-counting exercise.
  * Formula:
  * - baselineMaintenance = BMR * 1.2 (sedentary baseline, excluding workout activity)
  * - energyBalance = intake - (baselineMaintenance + loggedExerciseBurned)
- * - caloriesToBurn = Math.max(0, energyBalance)
  *
  * Notice: dailyGoal (which factors in activity-level TDEE) affects vsGoal,
- * but does NOT alter the physical energyBalance.
+ * but does NOT alter the estimated net energy balance.
  */
 export function calculateEnergyBalance(
   intake: number,
@@ -144,30 +141,22 @@ export function calculateEnergyBalance(
       vsGoal,
       baselineMaintenance: 0,
       energyBalance: 0,
-      caloriesToBurn: 0,
       hasProfileMetrics: false,
     };
   }
 
   const baselineMaintenance = Math.round(bmr * 1.2);
   const energyBalance = Math.round(safeIntake - (baselineMaintenance + safeBurn));
-  const caloriesToBurn = Math.max(0, energyBalance);
 
   return {
     vsGoal,
     baselineMaintenance,
     energyBalance,
-    caloriesToBurn,
     hasProfileMetrics: true,
   };
 }
 
-/** Calorie surplus relative to goal (legacy helper) */
+/** Calorie difference relative to goal (legacy helper) */
 export function calculateSurplus(caloriesIn: number, goal: number): number {
   return caloriesIn - goal;
-}
-
-/** Fat mass equivalent of a calorie surplus (rough: 7700 kcal ≈ 1 kg fat) */
-export function surplusToFatKg(surplusKcal: number): number {
-  return surplusKcal / 7700;
 }
