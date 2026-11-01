@@ -1,15 +1,11 @@
-/**
- * LoginScreen: Authenticates existing users with email and password, protected against open redirects.
- * Rendered by src/app/(auth)/login/page.tsx.
- */
-
 'use client';
 
-import { Suspense } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Card } from '@/components/ui/Card';
+import { ThemeToggle } from '@/components/layout';
 import { useLoginForm } from '../hooks/useLoginForm';
 
 function LoginForm() {
@@ -23,25 +19,38 @@ function LoginForm() {
     handleSubmit,
   } = useLoginForm();
 
+  const [showPassword, setShowPassword] = useState(false);
+
   return (
-    <Card className="w-full max-w-md">
-      <div className="mb-8 text-center">
-        <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
-        <p className="mt-1 text-sm text-gray-500">Sign in to your FitCalc account</p>
+    <div className="w-full max-w-md mx-auto p-6 sm:p-8 rounded-[20px] bg-[var(--color-plate)] border border-[var(--color-border)] shadow-xs">
+      <div className="mb-6 text-left">
+        <Link href="/" className="inline-flex items-center gap-2 mb-4">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-neel)] text-[var(--color-haldi)] font-heading font-bold text-xs">
+            FC
+          </div>
+          <span className="font-heading text-base font-bold text-[var(--color-neel)]">
+            FitCalc
+          </span>
+        </Link>
+        <h1 className="font-heading text-2xl font-bold text-[var(--color-neel)]">
+          Welcome back
+        </h1>
+        <p className="mt-1 text-xs text-[var(--color-neel-muted)]">
+          Sign in to access your logs and daily nutrition plate.
+        </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+          <div className="rounded-[10px] bg-[var(--color-chukandar-subtle)] border border-[var(--color-chukandar)]/20 p-3 text-xs font-semibold text-[var(--color-chukandar)]">
             {error}
           </div>
         )}
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">
-            Email
-          </label>
           <Input
+            id="login-email"
+            label="Email address"
             type="email"
             placeholder="you@example.com"
             value={email}
@@ -51,43 +60,92 @@ function LoginForm() {
           />
         </div>
 
-        <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">
-            Password
-          </label>
+        <div className="relative">
           <Input
-            type="password"
+            id="login-password"
+            label="Password"
+            type={showPassword ? 'text' : 'password'}
             placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
             autoComplete="current-password"
           />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            className="absolute right-3 top-8 text-[var(--color-neel-muted)] hover:text-[var(--color-neel)] p-1 min-h-[36px] min-w-[36px] flex items-center justify-center"
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
         </div>
 
         <Button
           type="submit"
-          className="w-full"
+          className="w-full mt-2"
           disabled={loading}
         >
-          {loading ? 'Signing in...' : 'Sign In'}
+          {loading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+              Signing in...
+            </>
+          ) : (
+            'Sign In'
+          )}
         </Button>
       </form>
 
-      <div className="mt-6 text-center text-sm text-gray-500">
+      <p className="mt-6 text-center text-xs text-[var(--color-neel-muted)]">
         Don&apos;t have an account?{' '}
-        <Link href="/signup" className="font-semibold text-emerald-600 hover:text-emerald-700">
+        <Link
+          href="/signup"
+          className="font-semibold text-[var(--color-neel)] underline hover:opacity-80"
+        >
           Sign up
         </Link>
-      </div>
-    </Card>
+      </p>
+    </div>
   );
 }
 
 export function LoginScreen() {
   return (
-    <Suspense fallback={<Card className="w-full max-w-md p-8 text-center text-gray-400">Loading...</Card>}>
-      <LoginForm />
-    </Suspense>
+    <div className="min-h-screen grid lg:grid-cols-2 bg-[var(--color-steel)] text-[var(--color-neel)]">
+      {/* Form column */}
+      <div className="flex flex-col justify-between p-6 sm:p-12">
+        <div className="flex justify-end">
+          <ThemeToggle />
+        </div>
+        <div className="flex items-center justify-center my-auto py-8">
+          <Suspense fallback={<div className="text-center text-xs text-[var(--color-neel-muted)]">Loading form...</div>}>
+            <LoginForm />
+          </Suspense>
+        </div>
+        <p className="text-center text-[11px] text-[var(--color-neel-muted)]/70">
+          Estimated values only · Not medical advice
+        </p>
+      </div>
+
+      {/* Quiet side panel on wide screens */}
+      <div className="hidden lg:flex flex-col justify-between p-12 bg-[var(--color-plate)] border-l border-[var(--color-border)]">
+        <div className="space-y-4 max-w-md my-auto">
+          <span className="text-[11px] font-bold tracking-wider text-[var(--color-haldi)] uppercase">
+            Everyday nutrition
+          </span>
+          <h2 className="font-heading text-3xl font-extrabold text-[var(--color-neel)] leading-tight">
+            Log what you actually eat, without the Western guesswork.
+          </h2>
+          <p className="text-xs text-[var(--color-neel-muted)] leading-relaxed">
+            Real portions for roti, dal, sabzi, and poha. Balanced calories and macronutrients on a traditional Thali plate.
+          </p>
+        </div>
+        <div className="flex items-center gap-3 text-xs text-[var(--color-neel-muted)]">
+          <span className="h-2 w-2 rounded-full bg-[var(--color-patta)]" />
+          <span>Science-backed energy balance model</span>
+        </div>
+      </div>
+    </div>
   );
 }

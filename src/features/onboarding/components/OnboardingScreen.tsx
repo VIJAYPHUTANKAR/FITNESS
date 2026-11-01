@@ -1,11 +1,6 @@
-/**
- * OnboardingScreen: Multi-step wizard guiding new users through profile setup, BMR/TDEE math,
- * and safe calorie goal configuration. Rendered by src/app/(app)/onboarding/page.tsx.
- */
-
 'use client';
 
-import { AlertTriangle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { OnboardingStep1 } from './OnboardingStep1';
 import { OnboardingStep2 } from './OnboardingStep2';
@@ -43,36 +38,30 @@ export function OnboardingScreen() {
   } = useOnboarding();
 
   return (
-    <div className="mx-auto max-w-xl p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="mx-auto max-w-xl p-4 sm:p-6 lg:p-8 space-y-6 text-[var(--color-neel)]">
       {/* Progress Header */}
-      <div className="space-y-2 text-center">
-        <h1 className="text-2xl font-bold text-gray-900">Personalise Your Journey</h1>
-        <p className="text-xs text-gray-500">
-          Step {step} of 3 • Accurate metrics compute your BMR, TDEE, and safe calorie targets
+      <div className="space-y-3 text-center">
+        <h1 className="font-heading text-2xl sm:text-3xl font-bold text-[var(--color-neel)]">
+          Set up your nutrition profile
+        </h1>
+        <p className="text-xs text-[var(--color-neel-muted)]">
+          Step {step} of 3 · Calibrated for accurate BMR, TDEE, and safe daily calorie targets
         </p>
 
-        {/* Step dots */}
-        <div className="flex items-center justify-center gap-2 pt-2">
-          {[1, 2, 3].map((s) => (
-            <div
-              key={s}
-              className={`h-2 rounded-full transition-all duration-300 ${
-                s === step
-                  ? 'w-8 bg-emerald-600'
-                  : s < step
-                  ? 'w-2 bg-emerald-300'
-                  : 'w-2 bg-gray-200'
-              }`}
-            />
-          ))}
+        {/* Plain progress bar */}
+        <div className="w-full max-w-xs mx-auto h-1.5 rounded-full bg-[var(--color-border)] overflow-hidden">
+          <div
+            className="h-full bg-[var(--color-neel)] transition-all duration-300"
+            style={{ width: `${(step / 3) * 100}%` }}
+          />
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl border border-gray-100 p-6 sm:p-8 shadow-sm space-y-6">
+      <div className="bg-[var(--color-plate)] rounded-[20px] border border-[var(--color-border)] p-6 sm:p-8 shadow-xs space-y-6">
         {error && (
-          <div className="p-3 text-xs bg-red-50 text-red-600 rounded-xl flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            <span>{error}</span>
+          <div className="p-3 text-xs bg-[var(--color-chukandar-subtle)] border border-[var(--color-chukandar)]/20 text-[var(--color-chukandar)] rounded-[10px] flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span className="font-medium">{error}</span>
           </div>
         )}
 

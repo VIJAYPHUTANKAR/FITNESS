@@ -1,12 +1,8 @@
-/**
- * OnboardingStep3: Establishes primary goal (lose/maintain/gain) and verifies safety floor requirements.
- * Rendered inside OnboardingScreen.
- */
-
 'use client';
 
-import { Target, Sparkles, AlertTriangle, Info, ChevronLeft, Loader2, CheckCircle2 } from 'lucide-react';
+import { Target, AlertCircle, Info, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { NumberInput } from '@/components/ui/NumberInput';
 import type { GoalType, Gender } from '@/lib/calc/bmr';
 
 interface OnboardingStep3Props {
@@ -40,103 +36,109 @@ export function OnboardingStep3({
   onBack,
   onFinish,
 }: OnboardingStep3Props) {
+  const canFinish = calorieGoal >= floor && !isMinor;
+
   return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
-        <Target className="h-5 w-5 text-emerald-600" />
-        <h2 className="font-bold text-gray-900">Your Calorie Goal</h2>
+    <div className="space-y-5 text-left">
+      <div className="flex items-center gap-2 pb-3 border-b border-[var(--color-border-subtle)]">
+        <Target className="h-4 w-4 text-[var(--color-haldi)]" />
+        <h2 className="font-heading text-lg font-bold text-[var(--color-neel)]">
+          Your calorie goal
+        </h2>
       </div>
 
+      {/* Large tappable options for primary goal */}
       <div>
-        <label className="block text-xs font-semibold text-gray-700 mb-2">
-          What is your primary goal?
+        <label className="block text-xs font-semibold text-[var(--color-neel)] mb-2">
+          Primary focus
         </label>
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { id: 'lose', label: 'Fat Loss', desc: '-400 kcal below maintenance' },
-            { id: 'maintain', label: 'Maintain', desc: 'At maintenance' },
-            { id: 'gain', label: 'Gain Muscle', desc: '+300 kcal above maintenance' },
-          ].map(({ id, label, desc }) => (
+        <div className="grid grid-cols-3 gap-2.5">
+          {(
+            [
+              { id: 'lose', label: 'Fat Loss', desc: '-400 kcal deficit' },
+              { id: 'maintain', label: 'Maintain', desc: 'At maintenance' },
+              { id: 'gain', label: 'Gain Muscle', desc: '+300 kcal surplus' },
+            ] as const
+          ).map((item) => (
             <button
-              key={id}
+              key={item.id}
               type="button"
-              onClick={() => handleGoalTypeChange(id as GoalType)}
-              className={`p-3 text-left rounded-2xl border transition-all ${
-                goalType === id
-                  ? 'border-emerald-600 bg-emerald-50 text-emerald-900'
-                  : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+              onClick={() => handleGoalTypeChange(item.id)}
+              className={`p-3 text-left rounded-[12px] border transition-all duration-150 min-h-[56px] ${
+                goalType === item.id
+                  ? 'border-[var(--color-neel)] bg-[var(--color-steel)] text-[var(--color-neel)] font-bold'
+                  : 'border-[var(--color-border)] bg-[var(--color-plate)] text-[var(--color-neel-muted)] hover:bg-[var(--color-steel)]'
               }`}
             >
-              <p className="font-bold text-xs">{label}</p>
-              <p className="text-[10px] text-gray-500 mt-0.5">{desc}</p>
+              <p className="text-xs font-semibold">{item.label}</p>
+              <p className="text-[10px] opacity-75 mt-0.5">{item.desc}</p>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Target Card */}
-      <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2">
-        <div className="flex items-center justify-between">
+      {/* Target daily calories input */}
+      <div>
+        <NumberInput
+          id="dailyCalorieGoal"
+          label="Recommended daily calorie target"
+          min={500}
+          max={10000}
+          value={calorieGoal || ''}
+          onChange={(e) => setCalorieGoal(Number(e.target.value) || 0)}
+          helperText={`Calculated from your TDEE (${tdee} kcal). You may adjust manually.`}
+          required
+        />
+      </div>
+
+      {/* Safety floor warning */}
+      {isBelowFloor && (
+        <div className="p-3.5 bg-[var(--color-chukandar-subtle)] border border-[var(--color-chukandar)]/30 rounded-[12px] flex items-start gap-2.5 text-xs text-[var(--color-chukandar)] leading-relaxed">
+          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
           <div>
-            <span className="text-xs text-emerald-700 font-semibold uppercase tracking-wider">
-              Recommended Daily Target
-            </span>
-            <p className="text-3xl font-extrabold text-emerald-900 mt-1">
-              {calorieGoal} <span className="text-sm font-normal text-emerald-700">kcal / day</span>
+            <p className="font-bold">Below physiological safety floor</p>
+            <p className="mt-0.5 text-[11px]">
+              Minimum safe intake for your declared sex is {floor} kcal/day ({gender === 'female' ? '1,200 kcal for women' : '1,500 kcal for men'}). Calorie targets below this floor risk nutritional deficiencies and are blocked.
             </p>
           </div>
-          <Sparkles className="h-8 w-8 text-emerald-500 shrink-0" />
         </div>
-        <p className="text-xs text-emerald-800">
-          Formula recommendation: BMR {bmr} &times; Activity multiplier = TDEE {tdee} kcal.
-        </p>
+      )}
+
+      {/* Metric summary panel */}
+      <div className="p-3.5 rounded-[12px] bg-[var(--color-steel)] border border-[var(--color-border)] space-y-2 text-xs">
+        <div className="flex justify-between items-center text-[var(--color-neel-muted)]">
+          <span>Basal Metabolic Rate (BMR):</span>
+          <span className="font-semibold text-[var(--color-neel)] tabular-nums">{bmr} kcal</span>
+        </div>
+        <div className="flex justify-between items-center text-[var(--color-neel-muted)]">
+          <span>Daily Maintenance (TDEE):</span>
+          <span className="font-semibold text-[var(--color-neel)] tabular-nums">{tdee} kcal</span>
+        </div>
+        <div className="flex justify-between items-center pt-2 border-t border-[var(--color-border-subtle)]">
+          <span className="font-bold text-[var(--color-neel)]">Daily Target:</span>
+          <span className="font-heading font-extrabold text-base text-[var(--color-neel)] tabular-nums">
+            {calorieGoal} kcal
+          </span>
+        </div>
       </div>
 
-      {/* Manual Override option */}
-      <div>
-        <label className="block text-xs font-semibold text-gray-700 mb-1">
-          Customize Calorie Target (Optional)
-        </label>
-        <input
-          type="number"
-          min={floor}
-          max="10000"
-          value={calorieGoal}
-          onChange={(e) => setCalorieGoal(Number(e.target.value))}
-          className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-        />
-
-        {/* Safety Floor Warning */}
-        {isBelowFloor && (
-          <div className="mt-2 p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2">
-            <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
-            <span>
-              <strong>Below safety floor ({floor} kcal)!</strong> Guidelines require a minimum intake of {floor} kcal for {gender === 'female' ? 'women' : 'men'}. Targets below this floor cannot be saved.
-            </span>
-          </div>
-        )}
-      </div>
-
-      <div className="p-3 bg-gray-50 rounded-xl flex items-start gap-2 text-xs text-gray-500">
-        <Info className="h-4 w-4 shrink-0 text-gray-400 mt-0.5" />
-        <span>
-          Disclaimer: All calorie guidelines are estimates and for informational purposes only. Consult a physician or registered dietitian before starting any aggressive regimen.
-        </span>
-      </div>
-
-      <div className="pt-4 flex justify-between">
-        <Button variant="ghost" onClick={onBack} disabled={saving}>
-          <ChevronLeft className="h-4 w-4 mr-1" /> Back
+      <div className="flex items-center gap-3 pt-2">
+        <Button type="button" variant="secondary" onClick={onBack} disabled={saving} className="w-1/3">
+          Back
         </Button>
-        <Button onClick={onFinish} disabled={saving || isBelowFloor || isMinor} className="px-6">
+        <Button
+          type="button"
+          onClick={onFinish}
+          disabled={!canFinish || saving}
+          className="w-2/3"
+        >
           {saving ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> Saving...
+              <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+              Completing setup...
             </>
           ) : (
-            <>
-              <CheckCircle2 className="h-4 w-4 mr-1.5" /> Complete Setup
-            </>
+            'Complete setup'
           )}
         </Button>
       </div>

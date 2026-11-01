@@ -1,12 +1,8 @@
-/**
- * OnboardingStep2: Collects height, weight, and activity level and previews calculated BMR and TDEE.
- * Rendered inside OnboardingScreen.
- */
-
 'use client';
 
-import { Heart, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Activity } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { NumberInput } from '@/components/ui/NumberInput';
 import type { ActivityLevel } from '@/lib/calc/bmr';
 
 interface OnboardingStep2Props {
@@ -34,77 +30,106 @@ export function OnboardingStep2({
   onBack,
   onNext,
 }: OnboardingStep2Props) {
+  const canContinue = heightCm >= 50 && weightKg >= 20;
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
-        <Heart className="h-5 w-5 text-emerald-600" />
-        <h2 className="font-bold text-gray-900">Body Stats & Activity</h2>
+    <div className="space-y-5 text-left">
+      <div className="flex items-center gap-2 pb-3 border-b border-[var(--color-border-subtle)]">
+        <Activity className="h-4 w-4 text-[var(--color-haldi)]" />
+        <h2 className="font-heading text-lg font-bold text-[var(--color-neel)]">
+          Body stats & activity
+        </h2>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">
-            Height (cm)
-          </label>
-          <input
-            type="number"
-            min="50"
-            max="260"
-            value={heightCm}
-            onChange={(e) => setHeightCm(Number(e.target.value))}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+          <NumberInput
+            id="heightCm"
+            label="Height (cm)"
+            min={50}
+            max={300}
+            value={heightCm || ''}
+            onChange={(e) => setHeightCm(Number(e.target.value) || 0)}
+            required
           />
+        </div>
+
+        <div>
+          <NumberInput
+            id="weightKg"
+            label="Weight (kg)"
+            min={20}
+            max={500}
+            step={0.1}
+            value={weightKg || ''}
+            onChange={(e) => setWeightKg(Number(e.target.value) || 0)}
+            required
+          />
+        </div>
+      </div>
+
+      {/* Large tappable options for Activity Level */}
+      <div>
+        <label className="block text-xs font-semibold text-[var(--color-neel)] mb-2">
+          Daily lifestyle activity
+        </label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {(
+            [
+              { id: 'sedentary', label: 'Sedentary', desc: 'Desk job, little to no workout (1.2×)' },
+              { id: 'light', label: 'Lightly active', desc: '1–3 workout sessions per week (1.375×)' },
+              { id: 'moderate', label: 'Moderately active', desc: '3–5 workout sessions per week (1.55×)' },
+              { id: 'very_active', label: 'Very active', desc: '6–7 intense workout days per week (1.725×)' },
+            ] as const
+          ).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setActivityLevel(item.id)}
+              className={`p-3 text-left rounded-[12px] border transition-all duration-150 min-h-[56px] ${
+                activityLevel === item.id
+                  ? 'border-[var(--color-neel)] bg-[var(--color-steel)] text-[var(--color-neel)] font-bold'
+                  : 'border-[var(--color-border)] bg-[var(--color-plate)] text-[var(--color-neel-muted)] hover:bg-[var(--color-steel)]'
+              }`}
+            >
+              <p className="text-xs font-semibold">{item.label}</p>
+              <p className="text-[10px] opacity-75 mt-0.5">{item.desc}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Live BMR & TDEE preview */}
+      <div className="grid grid-cols-2 gap-3 p-3.5 rounded-[12px] bg-[var(--color-steel)] border border-[var(--color-border)] text-center">
+        <div>
+          <span className="text-[10px] font-semibold text-[var(--color-neel-muted)] uppercase tracking-wider">
+            Basal Metabolic Rate
+          </span>
+          <p className="font-heading font-extrabold text-base text-[var(--color-neel)] tabular-nums mt-0.5">
+            {bmr} <span className="text-[10px] font-normal text-[var(--color-neel-muted)]">kcal</span>
+          </p>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">
-            Weight (kg)
-          </label>
-          <input
-            type="number"
-            min="20"
-            max="500"
-            step="0.1"
-            value={weightKg}
-            onChange={(e) => setWeightKg(Number(e.target.value))}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-          />
+          <span className="text-[10px] font-semibold text-[var(--color-neel-muted)] uppercase tracking-wider">
+            Maintenance TDEE
+          </span>
+          <p className="font-heading font-extrabold text-base text-[var(--color-neel)] tabular-nums mt-0.5">
+            {tdee} <span className="text-[10px] font-normal text-[var(--color-neel-muted)]">kcal</span>
+          </p>
         </div>
       </div>
 
-      <div>
-        <label className="block text-xs font-semibold text-gray-700 mb-1">
-          Typical Daily Activity Level
-        </label>
-        <select
-          value={activityLevel}
-          onChange={(e) => setActivityLevel(e.target.value as ActivityLevel)}
-          className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"
-        >
-          <option value="sedentary">Sedentary (desk job, minimal exercise)</option>
-          <option value="light">Lightly Active (light exercise 1-3 days/wk)</option>
-          <option value="moderate">Moderately Active (moderate workout 3-5 days/wk)</option>
-          <option value="active">Active (hard exercise 6-7 days/wk)</option>
-          <option value="very_active">Very Active (physical labor or intensive training)</option>
-        </select>
-      </div>
-
-      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1 text-xs text-gray-600">
-        <p className="flex justify-between">
-          <span>Calculated BMR (Basal Metabolic Rate):</span>
-          <strong className="text-gray-900">{bmr} kcal/day</strong>
-        </p>
-        <p className="flex justify-between">
-          <span>Calculated TDEE (Maintenance):</span>
-          <strong className="text-gray-900">{tdee} kcal/day</strong>
-        </p>
-      </div>
-
-      <div className="pt-4 flex justify-between">
-        <Button variant="ghost" onClick={onBack}>
-          <ChevronLeft className="h-4 w-4 mr-1" /> Back
+      <div className="flex items-center gap-3 pt-2">
+        <Button type="button" variant="secondary" onClick={onBack} className="w-1/3">
+          Back
         </Button>
-        <Button onClick={onNext}>
-          Next: Goals <ChevronRight className="h-4 w-4 ml-1" />
+        <Button
+          type="button"
+          onClick={onNext}
+          disabled={!canContinue}
+          className="w-2/3"
+        >
+          Continue to goal
         </Button>
       </div>
     </div>

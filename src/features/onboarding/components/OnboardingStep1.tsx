@@ -1,12 +1,8 @@
-/**
- * OnboardingStep1: Collects basic user details (name, date of birth, biological sex) and validates adult age.
- * Rendered inside OnboardingScreen.
- */
-
 'use client';
 
-import { User, AlertTriangle, ChevronRight } from 'lucide-react';
+import { AlertCircle, User } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import type { Gender } from '@/lib/calc/bmr';
 
 interface OnboardingStep1Props {
@@ -32,75 +28,92 @@ export function OnboardingStep1({
   isMinor,
   onNext,
 }: OnboardingStep1Props) {
+  const canContinue = Boolean(fullName.trim() && dob && !isMinor);
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
-        <User className="h-5 w-5 text-emerald-600" />
-        <h2 className="font-bold text-gray-900">Basic Information</h2>
+    <div className="space-y-5 text-left">
+      <div className="flex items-center gap-2 pb-3 border-b border-[var(--color-border-subtle)]">
+        <User className="h-4 w-4 text-[var(--color-haldi)]" />
+        <h2 className="font-heading text-lg font-bold text-[var(--color-neel)]">
+          Basic information
+        </h2>
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-gray-700 mb-1">
-          Full Name
-        </label>
-        <input
+        <Input
+          id="fullName"
+          label="Full name"
           type="text"
-          placeholder="Gaurav Sharma"
+          placeholder="e.g. Priya Sharma"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
-          className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+          required
         />
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-gray-700 mb-1">
-          Date of Birth
-        </label>
-        <input
+        <Input
+          id="dob"
+          label="Date of birth"
           type="date"
           value={dob}
           onChange={(e) => setDob(e.target.value)}
-          className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+          required
+          helperText={dob && !isMinor ? `Calculated age: ${age} years` : undefined}
         />
-        <p className="text-[11px] text-gray-400 mt-1">Age: {age} years</p>
-        {isMinor && (
-          <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 space-y-1">
-            <p className="font-semibold flex items-center gap-1.5 text-amber-800">
-              <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
-              Designed for Adults (18+)
-            </p>
-            <p>
-              FitCalc is designed for adults (18+). Calorie goals, restriction, and deficit targets can impact physical growth and development. If you are under 18, please consult a pediatrician or doctor with a parent or guardian.
-            </p>
-          </div>
-        )}
       </div>
 
+      {/* Under 18 Guard Block */}
+      {dob && isMinor && (
+        <div className="p-3.5 bg-[var(--color-chukandar-subtle)] border border-[var(--color-chukandar)]/30 rounded-[12px] flex items-start gap-2.5 text-xs text-[var(--color-chukandar)] leading-relaxed">
+          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-bold">Age gate: Adults only (18+)</p>
+            <p className="mt-0.5 text-[11px]">
+              Calculated age: {age} years. FitCalc is calibrated exclusively for adult physiology. Nutritional tracking for minors requires supervision from a pediatrician.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Large tappable options for biological sex */}
       <div>
-        <label className="block text-xs font-semibold text-gray-700 mb-1">
-          Biological Sex (for Mifflin-St Jeor metabolic formula)
+        <label className="block text-xs font-semibold text-[var(--color-neel)] mb-2">
+          Biological sex (for metabolic BMR equations)
         </label>
-        <div className="grid grid-cols-3 gap-2">
-          {(['male', 'female', 'other'] as Gender[]).map((g) => (
+        <div className="grid grid-cols-3 gap-2.5">
+          {(
+            [
+              { id: 'female', label: 'Female', desc: '1,200 kcal floor' },
+              { id: 'male', label: 'Male', desc: '1,500 kcal floor' },
+              { id: 'other', label: 'Other', desc: '1,500 kcal floor' },
+            ] as const
+          ).map((item) => (
             <button
-              key={g}
+              key={item.id}
               type="button"
-              onClick={() => setGender(g)}
-              className={`py-2 px-3 text-xs font-semibold rounded-xl border capitalize transition-all ${
-                gender === g
-                  ? 'border-emerald-600 bg-emerald-50 text-emerald-800'
-                  : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+              onClick={() => setGender(item.id)}
+              className={`p-3 text-left rounded-[12px] border transition-all duration-150 min-h-[56px] ${
+                gender === item.id
+                  ? 'border-[var(--color-neel)] bg-[var(--color-steel)] text-[var(--color-neel)] font-bold'
+                  : 'border-[var(--color-border)] bg-[var(--color-plate)] text-[var(--color-neel-muted)] hover:bg-[var(--color-steel)]'
               }`}
             >
-              {g}
+              <p className="text-xs font-semibold">{item.label}</p>
+              <p className="text-[10px] opacity-75 mt-0.5">{item.desc}</p>
             </button>
           ))}
         </div>
       </div>
 
-      <div className="pt-4 flex justify-end">
-        <Button onClick={onNext} disabled={isMinor}>
-          Next: Body Stats <ChevronRight className="h-4 w-4 ml-1" />
+      <div className="pt-2">
+        <Button
+          type="button"
+          onClick={onNext}
+          disabled={!canContinue}
+          className="w-full"
+        >
+          Continue to body stats
         </Button>
       </div>
     </div>
