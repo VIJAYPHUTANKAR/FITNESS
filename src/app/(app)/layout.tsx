@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Dumbbell, LogOut } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { NavSidebar, BottomTabBar } from '@/components/NavSidebar';
+import { NavSidebar, BottomTabBar } from '@/components/layout';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
