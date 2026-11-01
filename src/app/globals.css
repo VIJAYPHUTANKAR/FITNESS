@@ -1,11 +1,130 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: var(--font-sans), "Instrument Sans", system-ui, -apple-system, sans-serif;
+  --font-heading: var(--font-heading), "Bricolage Grotesque", system-ui, -apple-system, sans-serif;
+
+  --color-neel: var(--color-neel);
+  --color-neel-muted: var(--color-neel-muted);
+  --color-steel: var(--color-steel);
+  --color-plate: var(--color-plate);
+  --color-border: var(--color-border);
+  --color-border-subtle: var(--color-border-subtle);
+
+  --color-haldi: var(--color-haldi);
+  --color-haldi-subtle: var(--color-haldi-subtle);
+  --color-chukandar: var(--color-chukandar);
+  --color-chukandar-subtle: var(--color-chukandar-subtle);
+  --color-patta: var(--color-patta);
+  --color-patta-subtle: var(--color-patta-subtle);
+
+  --radius-button: 12px;
+  --radius-input: 10px;
+  --radius-surface: 16px;
+  --radius-sheet: 24px;
+}
+
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --color-neel: #1D2147;
+  --color-neel-muted: #565B82;
+  --color-steel: #EDF0F1;
+  --color-plate: #FAFBFB;
+  --color-border: #D8DCE0;
+  --color-border-subtle: #E8EBEE;
+
+  --color-haldi: #F2B01E;
+  --color-haldi-subtle: #FEF7E8;
+  --color-chukandar: #B1275B;
+  --color-chukandar-subtle: #FBEAF1;
+  --color-patta: #327349;
+  --color-patta-subtle: #E8F4EC;
+}
+
+.dark {
+  --color-neel: #EDEFFA;
+  --color-neel-muted: #9DA3C7;
+  --color-steel: #12142B;
+  --color-plate: #1B1E3D;
+  --color-border: #2C305C;
+  --color-border-subtle: #22264C;
+
+  --color-haldi: #F5BE42;
+  --color-haldi-subtle: #362914;
+  --color-chukandar: #D1457A;
+  --color-chukandar-subtle: #381A27;
+  --color-patta: #4CA369;
+  --color-patta-subtle: #1C3325;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-neel: #EDEFFA;
+    --color-neel-muted: #9DA3C7;
+    --color-steel: #12142B;
+    --color-plate: #1B1E3D;
+    --color-border: #2C305C;
+    --color-border-subtle: #22264C;
+
+    --color-haldi: #F5BE42;
+    --color-haldi-subtle: #362914;
+    --color-chukandar: #D1457A;
+    --color-chukandar-subtle: #381A27;
+    --color-patta: #4CA369;
+    --color-patta-subtle: #1C3325;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-neel: #EDEFFA;
+  --color-neel-muted: #9DA3C7;
+  --color-steel: #12142B;
+  --color-plate: #1B1E3D;
+  --color-border: #2C305C;
+  --color-border-subtle: #22264C;
+
+  --color-haldi: #F5BE42;
+  --color-haldi-subtle: #362914;
+  --color-chukandar: #D1457A;
+  --color-chukandar-subtle: #381A27;
+  --color-patta: #4CA369;
+  --color-patta-subtle: #1C3325;
+}
+
+* {
+  border-color: var(--color-border);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background-color: var(--color-steel);
+  color: var(--color-neel);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6, .font-heading {
+  font-family: var(--font-heading);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 2px Haldi outline offset with Neel inner */
+:focus-visible {
+  outline: 2px solid var(--color-haldi);
+  outline-offset: 2px;
+}
+
+::selection {
+  background-color: var(--color-haldi);
+  color: #1D2147;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

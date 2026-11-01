@@ -1,19 +1,46 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Bricolage_Grotesque, Instrument_Sans } from 'next/font/google';
 import './globals.css';
 
-const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
-const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
+const bricolage = Bricolage_Grotesque({
+  variable: '--font-heading',
+  subsets: ['latin'],
+  display: 'swap',
+});
+
+const instrument = Instrument_Sans({
+  variable: '--font-sans',
+  subsets: ['latin'],
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
-  title: 'FitCalc – Calorie Tracker',
-  description: 'Track food, calories, and get exercise burn recommendations.',
+  title: 'FitCalc – Thoughtful Indian Calorie & Nutrition Tracker',
+  description: 'Log regional meals, understand personal energy balance, and pace daily activities calmly.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full`}>
-      <body className="min-h-full antialiased bg-gray-50">
+    <html lang="en" className={`${bricolage.variable} ${instrument.variable} h-full`}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function() {
+              try {
+                var theme = localStorage.getItem('fitcalc_theme');
+                if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                  document.documentElement.classList.add('dark');
+                  document.documentElement.setAttribute('data-theme', 'dark');
+                } else {
+                  document.documentElement.classList.remove('dark');
+                  document.documentElement.setAttribute('data-theme', 'light');
+                }
+              } catch (e) {}
+            })();`,
+          }}
+        />
+      </head>
+      <body className="min-h-full antialiased bg-[var(--color-steel)] text-[var(--color-neel)]">
         {children}
       </body>
     </html>
