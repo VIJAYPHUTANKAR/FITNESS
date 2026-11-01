@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { scaleMacros } from '@/lib/calc/macros';
+import { formatSupabaseError } from '@/lib/utils';
+import { FoodLogFormSchema } from '@/lib/validation/schemas';
 import type { MealType } from '@/types/database';
 import { Search, Plus, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -88,6 +90,26 @@ export function FoodSearch({ mealType, loggedOn, onSuccess, onClose }: FoodSearc
     setLogging(true);
     setError(null);
 
+    // Validate payload with Zod
+    const payload = {
+      food_id: selectedFood.id ?? null,
+      food_name: selectedFood.name,
+      logged_on: loggedOn,
+      meal_type: mealType,
+      quantity_grams: grams,
+      calories: Math.round(scaled.calories),
+      protein_g: Math.round(scaled.protein_g * 10) / 10,
+      carbs_g: Math.round(scaled.carbs_g * 10) / 10,
+      fat_g: Math.round(scaled.fat_g * 10) / 10,
+    };
+
+    const validation = FoodLogFormSchema.safeParse(payload);
+    if (!validation.success) {
+      setError(validation.error.issues[0]?.message || 'Invalid food entry.');
+      setLogging(false);
+      return;
+    }
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -100,21 +122,13 @@ export function FoodSearch({ mealType, loggedOn, onSuccess, onClose }: FoodSearc
 
     const { error: insertErr } = await supabase.from('food_logs').insert({
       user_id: user.id,
-      food_id: selectedFood.id ?? null,
-      food_name: selectedFood.name,
-      logged_on: loggedOn,
-      meal_type: mealType,
-      quantity_grams: grams,
-      calories: Math.round(scaled.calories),
-      protein_g: Math.round(scaled.protein_g * 10) / 10,
-      carbs_g: Math.round(scaled.carbs_g * 10) / 10,
-      fat_g: Math.round(scaled.fat_g * 10) / 10,
+      ...validation.data,
     });
 
     setLogging(false);
 
     if (insertErr) {
-      setError(insertErr.message);
+      setError(formatSupabaseError(insertErr));
       return;
     }
 
@@ -177,9 +191,9 @@ export function FoodSearch({ mealType, loggedOn, onSuccess, onClose }: FoodSearc
               <input
                 type="number"
                 min="1"
-                max="2000"
+                max="5000"
                 value={grams}
-                onChange={(e) => setGrams(Math.max(1, Number(e.target.value) || 0))}
+                onChange={(e) => setGrams(Math.max(1, Math.min(5000, Number(e.target.value) || 0)))}
                 className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
             </div>
@@ -266,7 +280,7 @@ export function FoodSearch({ mealType, loggedOn, onSuccess, onClose }: FoodSearc
           href="/foods/custom"
           className="text-xs text-gray-500 hover:text-emerald-600 font-medium inline-flex items-center gap-1"
         >
-          Can't find what you need? <span className="underline">Add a custom food</span>
+          Can&apos;t find what you need? <span className="underline">Add a custom food</span>
         </Link>
       </div>
     </div>

@@ -7,12 +7,14 @@ import {
   calculateBMR,
   calculateTDEE,
   calculateCalorieGoal,
+  getCalorieGoalFloor,
   ageFromDOB,
   type Gender,
   type ActivityLevel,
   type GoalType,
 } from '@/lib/calc/bmr';
-import { todayISO } from '@/lib/utils';
+import { todayISO, formatSupabaseError } from '@/lib/utils';
+import { ProfileFormSchema } from '@/lib/validation/schemas';
 import { Button } from '@/components/ui/Button';
 import {
   User,
@@ -23,7 +25,8 @@ import {
   CheckCircle2,
   Loader2,
   Sparkles,
-  Info
+  Info,
+  AlertTriangle
 } from 'lucide-react';
 
 export default function OnboardingPage() {
@@ -48,10 +51,11 @@ export default function OnboardingPage() {
   const bmr = Math.round(calculateBMR(weightKg, heightCm, Math.max(10, age || 25), gender));
   const tdee = Math.round(calculateTDEE(bmr, activityLevel));
   const recommendedGoal = calculateCalorieGoal(tdee, goalType, gender);
+  const floor = getCalorieGoalFloor(gender);
 
   const [calorieGoal, setCalorieGoal] = useState<number>(recommendedGoal);
+  const isBelowFloor = calorieGoal < floor;
 
-  // Keep calorie goal updated with recommendation unless manually modified
   function handleGoalTypeChange(newGoal: GoalType) {
     setGoalType(newGoal);
     const updated = calculateCalorieGoal(tdee, newGoal, gender);
@@ -61,6 +65,24 @@ export default function OnboardingPage() {
   async function handleFinish() {
     setSaving(true);
     setError(null);
+
+    // Zod validation
+    const validation = ProfileFormSchema.safeParse({
+      full_name: fullName.trim() || null,
+      date_of_birth: dob,
+      gender,
+      height_cm: heightCm,
+      weight_kg: weightKg,
+      activity_level: activityLevel,
+      goal_type: goalType,
+      daily_calorie_goal: calorieGoal,
+    });
+
+    if (!validation.success) {
+      setError(validation.error.issues[0]?.message || 'Please check your inputs.');
+      setSaving(false);
+      return;
+    }
 
     const {
       data: { user },
@@ -77,18 +99,11 @@ export default function OnboardingPage() {
       .from('profiles')
       .upsert({
         id: user.id,
-        full_name: fullName.trim() || null,
-        date_of_birth: dob,
-        gender,
-        height_cm: heightCm,
-        weight_kg: weightKg,
-        activity_level: activityLevel,
-        goal_type: goalType,
-        daily_calorie_goal: calorieGoal,
+        ...validation.data,
       });
 
     if (profileErr) {
-      setError(profileErr.message);
+      setError(formatSupabaseError(profileErr));
       setSaving(false);
       return;
     }
@@ -114,7 +129,7 @@ export default function OnboardingPage() {
       <div className="space-y-2 text-center">
         <h1 className="text-2xl font-bold text-gray-900">Personalise Your Journey</h1>
         <p className="text-xs text-gray-500">
-          Step {step} of 3 • Accurate body metrics ensure healthy calorie targets
+          Step {step} of 3 • Accurate metrics compute your BMR, TDEE, and safe calorie targets
         </p>
 
         {/* Step dots */}
@@ -136,8 +151,9 @@ export default function OnboardingPage() {
 
       <div className="bg-white rounded-3xl border border-gray-100 p-6 sm:p-8 shadow-sm space-y-6">
         {error && (
-          <div className="p-3 text-xs bg-red-50 text-red-600 rounded-xl">
-            {error}
+          <div className="p-3 text-xs bg-red-50 text-red-600 rounded-xl flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
@@ -177,7 +193,7 @@ export default function OnboardingPage() {
 
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1">
-                Biological Sex (for metabolic rate)
+                Biological Sex (for Mifflin-St Jeor metabolic formula)
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {(['male', 'female', 'other'] as Gender[]).map((g) => (
@@ -220,8 +236,8 @@ export default function OnboardingPage() {
                 </label>
                 <input
                   type="number"
-                  min="80"
-                  max="250"
+                  min="50"
+                  max="260"
                   value={heightCm}
                   onChange={(e) => setHeightCm(Number(e.target.value))}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
@@ -233,8 +249,8 @@ export default function OnboardingPage() {
                 </label>
                 <input
                   type="number"
-                  min="30"
-                  max="300"
+                  min="20"
+                  max="500"
                   step="0.1"
                   value={weightKg}
                   onChange={(e) => setWeightKg(Number(e.target.value))}
@@ -256,7 +272,7 @@ export default function OnboardingPage() {
                 <option value="light">Lightly Active (light exercise 1-3 days/wk)</option>
                 <option value="moderate">Moderately Active (moderate workout 3-5 days/wk)</option>
                 <option value="active">Active (hard exercise 6-7 days/wk)</option>
-                <option value="very_active">Very Active (physical labor or twice-a-day training)</option>
+                <option value="very_active">Very Active (physical labor or intensive training)</option>
               </select>
             </div>
 
@@ -331,7 +347,7 @@ export default function OnboardingPage() {
                 <Sparkles className="h-8 w-8 text-emerald-500 shrink-0" />
               </div>
               <p className="text-xs text-emerald-800">
-                Based on the Mifflin-St Jeor formula and safe nutritional guidelines (minimum 1,200 kcal for women, 1,500 kcal for men).
+                Formula recommendation: BMR {bmr} &times; Activity multiplier = TDEE {tdee} kcal.
               </p>
             </div>
 
@@ -342,12 +358,22 @@ export default function OnboardingPage() {
               </label>
               <input
                 type="number"
-                min="1000"
-                max="6000"
+                min="500"
+                max="10000"
                 value={calorieGoal}
                 onChange={(e) => setCalorieGoal(Number(e.target.value))}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
+
+              {/* Safety Floor Warning */}
+              {isBelowFloor && (
+                <div className="mt-2 p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+                  <span>
+                    <strong>Below safety floor ({floor} kcal)!</strong> Guidelines recommend a minimum intake of {floor} kcal for {gender === 'female' ? 'women' : 'men'} to avoid nutrient deficiencies and metabolic slow-down.
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="p-3 bg-gray-50 rounded-xl flex items-start gap-2 text-xs text-gray-500">

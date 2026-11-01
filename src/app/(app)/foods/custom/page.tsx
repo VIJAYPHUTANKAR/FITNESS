@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import type { Food } from '@/types/database';
+import { CustomFoodFormSchema } from '@/lib/validation/schemas';
+import { formatSupabaseError } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import {
   Sparkles,
@@ -62,11 +64,27 @@ export default function CustomFoodsPage() {
 
   async function handleAddFood(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim() || caloriesPer100g === '') return;
-
-    setSaving(true);
     setError(null);
 
+    // Zod validation
+    const validation = CustomFoodFormSchema.safeParse({
+      name: name.trim(),
+      brand: brand.trim() || null,
+      serving_desc: servingDesc.trim() || '100 g',
+      serving_grams: Number(servingGrams) || 100,
+      calories_per_100g: caloriesPer100g === '' ? -1 : Number(caloriesPer100g),
+      protein_g: proteinG !== '' ? Number(proteinG) : null,
+      carbs_g: carbsG !== '' ? Number(carbsG) : null,
+      fat_g: fatG !== '' ? Number(fatG) : null,
+      fiber_g: fiberG !== '' ? Number(fiberG) : null,
+    });
+
+    if (!validation.success) {
+      setError(validation.error.issues[0]?.message || 'Please verify food inputs.');
+      return;
+    }
+
+    setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setError('Please sign in to add custom foods.');
@@ -76,22 +94,14 @@ export default function CustomFoodsPage() {
 
     const { error: insertErr } = await supabase.from('foods').insert({
       user_id: user.id,
-      name: name.trim(),
-      brand: brand.trim() || null,
-      serving_desc: servingDesc.trim() || '100 g',
-      serving_grams: servingGrams,
-      calories_per_100g: Number(caloriesPer100g),
-      protein_g: proteinG !== '' ? Number(proteinG) : null,
-      carbs_g: carbsG !== '' ? Number(carbsG) : null,
-      fat_g: fatG !== '' ? Number(fatG) : null,
-      fiber_g: fiberG !== '' ? Number(fiberG) : null,
+      ...validation.data,
       source: 'custom',
     });
 
     setSaving(false);
 
     if (insertErr) {
-      setError(insertErr.message);
+      setError(formatSupabaseError(insertErr));
       return;
     }
 
@@ -190,7 +200,7 @@ export default function CustomFoodsPage() {
                   type="number"
                   required
                   min="0"
-                  max="1000"
+                  max="900"
                   placeholder="kcal"
                   value={caloriesPer100g}
                   onChange={(e) => setCaloriesPer100g(e.target.value === '' ? '' : Number(e.target.value))}
@@ -218,7 +228,7 @@ export default function CustomFoodsPage() {
                 <input
                   type="number"
                   min="1"
-                  max="2000"
+                  max="5000"
                   value={servingGrams}
                   onChange={(e) => setServingGrams(Number(e.target.value) || 100)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"

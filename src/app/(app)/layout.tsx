@@ -7,14 +7,14 @@ import { NavSidebar, BottomTabBar } from '@/components/NavSidebar';
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     redirect('/login');
   }
 
-  const userEmail = session.user.email ?? '';
+  const userEmail = user.email ?? '';
 
   return (
     <div className="flex h-full min-h-screen flex-col bg-slate-50">

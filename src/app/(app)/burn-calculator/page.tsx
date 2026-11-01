@@ -12,6 +12,8 @@ import {
   type Exercise,
 } from '@/lib/calc/burn';
 import { surplusToFatKg } from '@/lib/calc/bmr';
+import { formatSupabaseError } from '@/lib/utils';
+import { BurnPlanFormSchema } from '@/lib/validation/schemas';
 import BurnTable from '@/components/BurnTable';
 import type { Profile, BurnPlan } from '@/types/database';
 
@@ -110,6 +112,18 @@ function BurnCalculatorInner() {
 
   const handleSavePlan = useCallback(async () => {
     if (!profile || results.length === 0) return;
+
+    const validation = BurnPlanFormSchema.safeParse({
+      calories_to_burn: calories,
+      days,
+      plan: results,
+    });
+
+    if (!validation.success) {
+      setSavedMsg(validation.error.issues[0]?.message || 'Invalid plan configuration.');
+      return;
+    }
+
     setSaving(true);
     setSavedMsg('');
     const {
@@ -121,8 +135,8 @@ function BurnCalculatorInner() {
     }
     const { error } = await supabase.from('burn_plans').insert({
       user_id: user.id,
-      calories_to_burn: calories,
-      days,
+      calories_to_burn: validation.data.calories_to_burn,
+      days: validation.data.days,
       plan: results as unknown as import('@/types/database').Json,
     });
     setSaving(false);
@@ -130,6 +144,8 @@ function BurnCalculatorInner() {
       setSavedMsg('Plan saved successfully!');
       loadSavedPlans();
       setTimeout(() => setSavedMsg(''), 4000);
+    } else {
+      setSavedMsg(formatSupabaseError(error));
     }
   }, [supabase, profile, calories, days, results, loadSavedPlans]);
 

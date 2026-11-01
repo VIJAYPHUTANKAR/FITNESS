@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { todayISO, formatDate } from '@/lib/utils';
+import { todayISO, formatDate, formatSupabaseError } from '@/lib/utils';
+import { ExerciseLogFormSchema } from '@/lib/validation/schemas';
 import type { Exercise, ExerciseLog } from '@/types/database';
 import { Button } from '@/components/ui/Button';
 import {
@@ -13,9 +14,13 @@ import {
   Flame,
   Plus,
   Trash2,
+  Edit2,
+  Check,
+  X,
   Loader2,
   Clock,
-  Dumbbell
+  Dumbbell,
+  AlertTriangle
 } from 'lucide-react';
 
 export default function LogExercisePage() {
@@ -24,7 +29,7 @@ export default function LogExercisePage() {
   const [loggedOn, setLoggedOn] = useState(todayISO());
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [logs, setLogs] = useState<ExerciseLog[]>([]);
-  const [userWeight, setUserWeight] = useState<number>(70); // default fallback
+  const [userWeight, setUserWeight] = useState<number>(70);
   const [loading, setLoading] = useState(true);
 
   // Form states
@@ -33,13 +38,17 @@ export default function LogExercisePage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Inline editing state
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editDuration, setEditDuration] = useState<number>(30);
+  const [updating, setUpdating] = useState(false);
+
   // Load exercises catalog & user profile
   useEffect(() => {
     async function loadInitial() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // 1. Fetch user profile for weight
       const { data: profile } = await supabase
         .from('profiles')
         .select('weight_kg')
@@ -50,7 +59,6 @@ export default function LogExercisePage() {
         setUserWeight(Number(profile.weight_kg));
       }
 
-      // 2. Fetch exercises catalog
       const { data: exList } = await supabase
         .from('exercises')
         .select('*')
@@ -108,7 +116,20 @@ export default function LogExercisePage() {
 
   async function handleAddExercise(e: React.FormEvent) {
     e.preventDefault();
-    if (!currentExercise || durationMin <= 0) return;
+    if (!currentExercise) return;
+
+    const validation = ExerciseLogFormSchema.safeParse({
+      exercise_id: currentExercise.id,
+      exercise_name: currentExercise.name,
+      logged_on: loggedOn,
+      duration_min: durationMin,
+      calories_burned: estimatedCalories,
+    });
+
+    if (!validation.success) {
+      setError(validation.error.issues[0]?.message || 'Please check your input.');
+      return;
+    }
 
     setSubmitting(true);
     setError(null);
@@ -122,20 +143,55 @@ export default function LogExercisePage() {
 
     const { error: insertErr } = await supabase.from('exercise_logs').insert({
       user_id: user.id,
-      exercise_id: currentExercise.id,
-      exercise_name: currentExercise.name,
-      logged_on: loggedOn,
-      duration_min: durationMin,
-      calories_burned: estimatedCalories,
+      ...validation.data,
     });
 
     setSubmitting(false);
 
     if (insertErr) {
-      setError(insertErr.message);
+      setError(formatSupabaseError(insertErr));
       return;
     }
 
+    fetchLogs();
+  }
+
+  async function handleUpdateLog(log: ExerciseLog) {
+    setUpdating(true);
+
+    // Calculate recalculated calories using exercise MET
+    const matchedEx = exercises.find((e) => e.id === log.exercise_id);
+    const met = matchedEx ? Number(matchedEx.met) : (log.calories_burned / (userWeight * (log.duration_min / 60)));
+    const newCalories = Math.round(met * userWeight * (editDuration / 60));
+
+    const validation = ExerciseLogFormSchema.safeParse({
+      exercise_id: log.exercise_id,
+      exercise_name: log.exercise_name,
+      logged_on: log.logged_on,
+      duration_min: editDuration,
+      calories_burned: newCalories,
+    });
+
+    if (!validation.success) {
+      setError(validation.error.issues[0]?.message || 'Invalid duration.');
+      setUpdating(false);
+      return;
+    }
+
+    const { error: updateErr } = await supabase
+      .from('exercise_logs')
+      .update({
+        duration_min: validation.data.duration_min,
+        calories_burned: validation.data.calories_burned,
+      })
+      .eq('id', log.id);
+
+    setUpdating(false);
+    if (updateErr) {
+      setError(formatSupabaseError(updateErr));
+      return;
+    }
+    setEditingId(null);
     fetchLogs();
   }
 
@@ -231,6 +287,16 @@ export default function LogExercisePage() {
               </div>
             </div>
 
+            {/* 120-Minute Safety Flag */}
+            {durationMin > 120 && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+                <span>
+                  <strong>Over 120 minutes!</strong> Sessions over 2 hours carry higher risks of fatigue or overuse injury. Ensure adequate hydration and rest.
+                </span>
+              </div>
+            )}
+
             {/* Live Calculation Preview */}
             <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
               <span className="text-xs text-gray-500">Estimated Burn ({userWeight} kg body weight)</span>
@@ -277,28 +343,85 @@ export default function LogExercisePage() {
             </div>
           ) : (
             <div className="divide-y divide-gray-50">
-              {logs.map((log) => (
-                <div key={log.id} className="py-3.5 flex items-center justify-between gap-3">
-                  <div>
-                    <p className="font-semibold text-gray-900 text-sm">{log.exercise_name}</p>
-                    <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-0.5">
-                      <Clock className="h-3.5 w-3.5 text-gray-400" /> {log.duration_min} minutes
-                    </p>
+              {logs.map((log) => {
+                const isEditing = editingId === log.id;
+                const isOver120 = Number(log.duration_min) > 120;
+
+                return (
+                  <div key={log.id} className="py-3.5 flex items-center justify-between gap-3 flex-wrap">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-gray-900 text-sm truncate">{log.exercise_name}</p>
+                        {isOver120 && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                            <AlertTriangle className="h-3 w-3 text-amber-600" /> &gt;120 min
+                          </span>
+                        )}
+                      </div>
+
+                      {isEditing ? (
+                        <div className="flex items-center gap-2 mt-2">
+                          <input
+                            type="number"
+                            min="1"
+                            max="600"
+                            value={editDuration}
+                            onChange={(e) => setEditDuration(Math.max(1, Number(e.target.value) || 0))}
+                            className="w-24 px-2 py-1 text-xs border rounded-lg"
+                          />
+                          <span className="text-xs text-gray-500">min</span>
+                          <button
+                            onClick={() => handleUpdateLog(log)}
+                            disabled={updating}
+                            className="p-1 text-emerald-600 hover:bg-emerald-50 rounded"
+                            title="Save"
+                          >
+                            <Check className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="p-1 text-gray-400 hover:bg-gray-100 rounded"
+                            title="Cancel"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-0.5">
+                          <Clock className="h-3.5 w-3.5 text-gray-400" /> {log.duration_min} minutes
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="font-bold text-orange-600 text-sm flex items-center gap-1">
+                        <Flame className="h-4 w-4" /> {Math.round(Number(log.calories_burned))} kcal
+                      </span>
+
+                      {!isEditing && (
+                        <button
+                          onClick={() => {
+                            setEditingId(log.id);
+                            setEditDuration(Number(log.duration_min));
+                          }}
+                          className="p-1.5 text-gray-400 hover:text-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors"
+                          title="Edit duration"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => handleDeleteLog(log.id)}
+                        className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                        title="Delete entry"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <span className="font-bold text-orange-600 text-sm flex items-center gap-1">
-                      <Flame className="h-4 w-4" /> {Math.round(Number(log.calories_burned))} kcal
-                    </span>
-                    <button
-                      onClick={() => handleDeleteLog(log.id)}
-                      className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                      title="Delete entry"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
