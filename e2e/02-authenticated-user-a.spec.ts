@@ -118,7 +118,7 @@ test.describe('Authenticated User A Core Flows (Tests 5 - 15)', () => {
     const durationInput = page.locator('input[type="number"]').first();
     await durationInput.fill('30');
 
-    const submitBtn = page.locator('button:has-text("Record Workout")');
+    const submitBtn = page.locator('button:has-text("Log Workout")');
     await submitBtn.click();
 
     // Verify workout log item appears
@@ -143,14 +143,14 @@ test.describe('Authenticated User A Core Flows (Tests 5 - 15)', () => {
     await page.goto('/burn-calculator');
     await page.waitForLoadState('networkidle');
 
-    // Verify input is prefilled with 600
-    const calInput = page.locator('input[placeholder*="500"]');
+    // Verify input accepts calorie amount (e.g. 600)
+    const calInput = page.locator('#calories').or(page.locator('input[placeholder*="500"]'));
     await calInput.fill('600');
 
     // Change days to 3
-    const daysSelect = page.locator('select').first();
-    if (await daysSelect.isVisible()) {
-      await daysSelect.selectOption('3');
+    const daysInput = page.locator('#days').or(page.locator('input[type="number"]').nth(1));
+    if (await daysInput.isVisible()) {
+      await daysInput.fill('3');
     }
 
     // Save plan
@@ -172,9 +172,9 @@ test.describe('Authenticated User A Core Flows (Tests 5 - 15)', () => {
     await page.waitForLoadState('networkidle');
 
     // Toggle 7, 14, 30 day buttons
-    const btn7 = page.locator('button:has-text("7 Days")');
-    const btn14 = page.locator('button:has-text("14 Days")');
-    const btn30 = page.locator('button:has-text("30 Days")');
+    const btn7 = page.locator('button:has-text("7 days")');
+    const btn14 = page.locator('button:has-text("14 days")');
+    const btn30 = page.locator('button:has-text("30 days")');
 
     if (await btn7.isVisible()) await btn7.click();
     if (await btn14.isVisible()) await btn14.click();

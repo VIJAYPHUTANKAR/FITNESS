@@ -12,72 +12,62 @@ import { todayISO } from '@/lib/dates';
 interface FoodLogDateBarProps {
   loggedOn: string;
   setLoggedOn: (date: string) => void;
-  dayTotals: {
-    calories: number;
-    proteinG: number;
-    carbsG: number;
-    fatG: number;
-  };
-  onPrevDay: () => void;
-  onNextDay: () => void;
+  changeDate: (days: number) => void;
+  totalCalories: number;
+  totalProtein: number;
+  totalCarbs: number;
+  totalFat: number;
 }
 
 export function FoodLogDateBar({
   loggedOn,
   setLoggedOn,
-  dayTotals,
-  onPrevDay,
-  onNextDay,
+  changeDate,
+  totalCalories,
+  totalProtein,
+  totalCarbs,
+  totalFat,
 }: FoodLogDateBarProps) {
   const isToday = loggedOn === todayISO();
 
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200">
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
       <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onPrevDay}
-          aria-label="Previous day"
-          className="p-1 h-8 w-8"
-        >
+        <Button variant="ghost" size="sm" onClick={() => changeDate(-1)} aria-label="Previous day">
           <ChevronLeft className="h-5 w-5" />
         </Button>
-        <div className="flex items-center gap-2 font-semibold text-slate-800">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gray-50 border border-gray-200">
           <Calendar className="h-4 w-4 text-emerald-600" />
           <input
             type="date"
             value={loggedOn}
             onChange={(e) => e.target.value && setLoggedOn(e.target.value)}
-            className="border-none bg-transparent font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded px-1"
+            className="text-sm font-semibold text-gray-800 bg-transparent focus:outline-none"
           />
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onNextDay}
-          aria-label="Next day"
-          className="p-1 h-8 w-8"
-        >
+        <Button variant="ghost" size="sm" onClick={() => changeDate(1)} aria-label="Next day">
           <ChevronRight className="h-5 w-5" />
         </Button>
         {!isToday && (
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
+            type="button"
             onClick={() => setLoggedOn(todayISO())}
-            className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+            className="text-xs font-semibold text-emerald-600 hover:underline ml-1"
           >
             Today
-          </Button>
+          </button>
         )}
       </div>
 
-      <div className="flex items-center gap-4 text-xs font-medium text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
-        <span>Total: <strong className="text-slate-800 font-bold">{dayTotals.calories}</strong> kcal</span>
-        <span>P: <strong className="text-slate-800">{dayTotals.proteinG}g</strong></span>
-        <span>C: <strong className="text-slate-800">{dayTotals.carbsG}g</strong></span>
-        <span>F: <strong className="text-slate-800">{dayTotals.fatG}g</strong></span>
+      <div className="flex items-center gap-4 text-xs font-medium text-gray-600">
+        <div className="bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100 text-emerald-800 font-bold">
+          {totalCalories} kcal total
+        </div>
+        <div className="hidden sm:flex items-center gap-3 text-gray-500">
+          <span>P: <strong className="text-gray-800">{totalProtein}g</strong></span>
+          <span>C: <strong className="text-gray-800">{totalCarbs}g</strong></span>
+          <span>F: <strong className="text-gray-800">{totalFat}g</strong></span>
+        </div>
       </div>
     </div>
   );
