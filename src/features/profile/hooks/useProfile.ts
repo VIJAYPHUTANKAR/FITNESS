@@ -162,7 +162,7 @@ export function useProfile() {
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { error: weightErr } = await logQuickWeight(user.id, w);
+    const { error: weightErr } = await logQuickWeight(user.id, w, todayISO());
 
     if (weightErr) {
       setErrorMsg(formatSupabaseError(weightErr));

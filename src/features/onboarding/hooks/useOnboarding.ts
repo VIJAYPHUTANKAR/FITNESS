@@ -14,6 +14,7 @@ import {
   type GoalType,
 } from '@/lib/calc/bmr';
 import { formatSupabaseError } from '@/lib/errors';
+import { todayISO } from '@/lib/dates';
 import { ProfileFormSchema } from '@/lib/validation/schemas';
 import { saveOnboardingProfile } from '../services/onboardingService';
 import type { OnboardingStep } from '../types';
@@ -108,6 +109,7 @@ export function useOnboarding() {
       userId: user.id,
       profileData: validation.data,
       weightKg,
+      loggedOn: todayISO(),
     });
 
     if (saveError) {

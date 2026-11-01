@@ -1,24 +1,22 @@
 'use client';
 
+import { formatLocalDate } from '@/lib/dates';
+
 interface WeeklyStreakProps {
   /** ISO date strings (YYYY-MM-DD) on which food was logged */
   loggedDates: string[];
 }
 
-function toISODate(d: Date): string {
-  return d.toISOString().split('T')[0];
-}
-
 export default function WeeklyStreak({ loggedDates }: WeeklyStreakProps) {
   const loggedSet = new Set(loggedDates);
 
-  // Build last-7-days array (oldest → newest)
+  // Build last-7-days array (oldest → newest) using browser local date
   const today = new Date();
   const days: { iso: string; label: string; logged: boolean }[] = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(today.getDate() - i);
-    const iso = toISODate(d);
+    const iso = formatLocalDate(d);
     days.push({
       iso,
       label: d.toLocaleDateString('en-US', { weekday: 'short' }),

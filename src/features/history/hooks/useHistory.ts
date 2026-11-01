@@ -38,7 +38,8 @@ export function useHistory() {
       return;
     }
 
-    const data = await fetchHistoryData(user.id, rangeDays);
+    const today = todayISO();
+    const data = await fetchHistoryData(user.id, rangeDays, today);
     setProfile(data.profile);
     setFoodLogs(data.foodLogs);
     setExerciseLogs(data.exerciseLogs);

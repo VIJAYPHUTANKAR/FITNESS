@@ -1,14 +1,14 @@
 import { createClient } from '@/lib/supabase/server';
-import { todayISO } from '@/lib/dates';
 import { calculateEnergyBalance, getProfileBMR } from '@/lib/calc/bmr';
 import type { DashboardData } from '../types';
 
 /**
- * Fetches dashboard data and computes energy balance and macro summaries for the current day.
+ * Fetches dashboard data and computes energy balance and macro summaries for the specified calendar date.
+ * Server function requires the explicit client local date string (YYYY-MM-DD) to prevent server-side UTC timezone skew.
  */
-export async function getDashboardData(userId: string): Promise<DashboardData> {
+export async function getDashboardData(userId: string, targetDate: string): Promise<DashboardData> {
   const supabase = await createClient();
-  const today = todayISO();
+  const today = targetDate;
 
   const [profileRes, foodLogsRes, exerciseLogsRes] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', userId).single(),

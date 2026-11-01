@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/client';
-import { todayISO } from '@/lib/dates';
 import { csvCell, fetchAllPages } from '@/lib/csv';
 import type { ProfileFormInput } from '@/lib/validation/schemas';
 import type { Profile } from '../types';
@@ -31,13 +30,14 @@ export async function updateUserProfile(userId: string, data: ProfileFormInput) 
 
 /**
  * Logs a weigh-in entry and updates current weight in profile.
+ * Requires client-computed loggedOn string to prevent timezone discrepancies.
  */
-export async function logQuickWeight(userId: string, weightKg: number) {
+export async function logQuickWeight(userId: string, weightKg: number, loggedOn: string) {
   const supabase = createClient();
   const { error: weightErr } = await supabase.from('weight_logs').upsert(
     {
       user_id: userId,
-      logged_on: todayISO(),
+      logged_on: loggedOn,
       weight_kg: weightKg,
     },
     { onConflict: 'user_id,logged_on' }
