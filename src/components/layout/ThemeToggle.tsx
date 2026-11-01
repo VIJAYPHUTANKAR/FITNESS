@@ -34,7 +34,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       onClick={toggleTheme}
       aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
       title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-      className="flex h-10 w-10 items-center justify-center rounded-[10px] text-[var(--color-neel-muted)] hover:bg-[var(--color-steel)] hover:text-[var(--color-neel)] border border-transparent hover:border-[var(--color-border)] transition-colors min-h-[44px] min-w-[44px]"
+      className={`flex h-10 w-10 items-center justify-center rounded-[10px] text-[var(--color-neel-muted)] hover:bg-[var(--color-steel)] hover:text-[var(--color-neel)] border border-transparent hover:border-[var(--color-border)] transition-colors min-h-[44px] min-w-[44px] ${className ?? ''}`}
     >
       {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </button>

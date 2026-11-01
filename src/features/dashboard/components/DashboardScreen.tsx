@@ -6,12 +6,10 @@ import { ThaliPlate } from './ThaliPlate';
 import { NetEnergyBanner } from './NetEnergyBanner';
 import { MealsSummaryGrid } from './MealsSummaryGrid';
 import {
-  UtensilsCrossed,
   Activity,
   Plus,
   AlertCircle,
   ChevronRight,
-  Flame,
 } from 'lucide-react';
 import type { DashboardData } from '../types';
 

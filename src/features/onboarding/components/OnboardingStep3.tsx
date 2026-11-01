@@ -1,6 +1,6 @@
 'use client';
 
-import { Target, AlertCircle, Info, Loader2 } from 'lucide-react';
+import { Target, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { NumberInput } from '@/components/ui/NumberInput';
 import type { GoalType, Gender } from '@/lib/calc/bmr';
