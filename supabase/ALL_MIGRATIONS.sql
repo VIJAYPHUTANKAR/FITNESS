@@ -759,3 +759,29 @@ alter table public.food_logs enable row level security;
 alter table public.exercise_logs enable row level security;
 
 commit;
+
+
+-- ── 010_harden_age_trigger.sql ───────────────────────────────────────────────
+
+-- Note: This trigger functions as a self-declared age gate at the database level,
+-- relying on user-provided date of birth rather than verified identity documents.
+create or replace function public.enforce_profile_adult_age()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.date_of_birth is not null and pg_catalog.age(pg_catalog.current_date, new.date_of_birth) < pg_catalog.interval '18 years' then
+    raise exception 'FitCalc is designed for adults (18+) only. Date of birth must reflect age 18 or older.';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists enforce_profile_adult_age_trigger on public.profiles;
+create trigger enforce_profile_adult_age_trigger
+  before insert or update of date_of_birth on public.profiles
+  for each row
+  when (new.date_of_birth is not null)
+  execute function public.enforce_profile_adult_age();
