@@ -1,12 +1,12 @@
 // lib/calc/bmr.ts
-// Pure functions for BMR, TDEE, and calorie goal calculation.
+// Pure functions for BMR, TDEE, energy balance, and calorie goal calculation.
 // All values are estimates. Not medical advice.
 
 export type Gender = 'male' | 'female' | 'other';
 export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
 export type GoalType = 'lose' | 'maintain' | 'gain';
 
-const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
+export const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
   sedentary:  1.2,
   light:      1.375,
   moderate:   1.55,
@@ -21,19 +21,26 @@ export function calculateBMR(
   ageYears: number,
   gender: Gender
 ): number {
+  if (weightKg <= 0 || heightCm <= 0 || ageYears <= 0) return 0;
   const base = 10 * weightKg + 6.25 * heightCm - 5 * ageYears;
   if (gender === 'male') return base + 5;
   if (gender === 'female') return base - 161;
-  // 'other': average of male and female
+  // 'other': average of male and female (-78)
   return base - 78;
 }
 
 /** Total Daily Energy Expenditure */
 export function calculateTDEE(bmr: number, activityLevel: ActivityLevel): number {
-  return bmr * ACTIVITY_MULTIPLIERS[activityLevel];
+  const mult = ACTIVITY_MULTIPLIERS[activityLevel] ?? 1.55;
+  return bmr * mult;
 }
 
-/** Recommended daily calorie goal based on goal type */
+/** Safe calorie goal floor by biological sex */
+export function getCalorieGoalFloor(gender?: Gender | null): number {
+  return gender === 'female' ? 1200 : 1500;
+}
+
+/** Recommended daily calorie goal based on goal type with minimum safety floors */
 export function calculateCalorieGoal(
   tdee: number,
   goalType: GoalType,
@@ -42,7 +49,7 @@ export function calculateCalorieGoal(
   let goal: number;
   switch (goalType) {
     case 'lose':
-      goal = tdee - 400; // moderate deficit
+      goal = tdee - 400; // moderate healthy deficit
       break;
     case 'gain':
       goal = tdee + 300;
@@ -50,21 +57,70 @@ export function calculateCalorieGoal(
     default:
       goal = tdee;
   }
-  // Safety floor
-  const floor = gender === 'female' ? 1200 : 1500;
+  const floor = getCalorieGoalFloor(gender);
   return Math.max(Math.round(goal), floor);
 }
 
 /** Age in whole years from date of birth */
 export function ageFromDOB(dob: Date): number {
+  if (isNaN(dob.getTime())) return 25; // fallback default
   const today = new Date();
   let age = today.getFullYear() - dob.getFullYear();
   const m = today.getMonth() - dob.getMonth();
   if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
-  return age;
+  return Math.max(1, Math.min(120, age));
 }
 
-/** Calorie surplus (positive = over, negative = under) */
+/** Computes TDEE from a profile object safely without crashing on missing data */
+export function getProfileTDEE(profile: {
+  weight_kg?: number | null;
+  height_cm?: number | null;
+  date_of_birth?: string | null;
+  gender?: Gender | null;
+  activity_level?: ActivityLevel | null;
+} | null): number {
+  if (!profile || !profile.weight_kg || !profile.height_cm) {
+    return 2000; // sensible fallback
+  }
+  const age = profile.date_of_birth ? ageFromDOB(new Date(profile.date_of_birth)) : 25;
+  const gender: Gender = profile.gender || 'other';
+  const activity: ActivityLevel = profile.activity_level || 'moderate';
+  const bmr = calculateBMR(Number(profile.weight_kg), Number(profile.height_cm), age, gender);
+  return Math.round(calculateTDEE(bmr, activity));
+}
+
+export interface EnergyBalance {
+  /** Intake minus daily target goal (positive = over goal, negative = remaining budget) */
+  vsGoal: number;
+  /** Intake minus (TDEE + exercise burned). True thermodynamic surplus / deficit */
+  vsMaintenance: number;
+  /** Safe surplus amount to send to burn calculator (strictly > 0, otherwise 0) */
+  caloriesToBurn: number;
+}
+
+/**
+ * Calculates both vsGoal and vsMaintenance correctly.
+ * For a user wanting to burn off true energy surplus, only vsMaintenance > 0 should be sent.
+ */
+export function calculateEnergyBalance(
+  intake: number,
+  dailyGoal: number,
+  tdee: number,
+  exerciseBurned = 0
+): EnergyBalance {
+  const safeIntake = Math.max(0, intake);
+  const safeGoal = Math.max(500, dailyGoal);
+  const safeTdee = Math.max(500, tdee);
+  const safeBurn = Math.max(0, exerciseBurned);
+
+  const vsGoal = Math.round(safeIntake - safeGoal);
+  const vsMaintenance = Math.round(safeIntake - (safeTdee + safeBurn));
+  const caloriesToBurn = Math.max(0, vsMaintenance);
+
+  return { vsGoal, vsMaintenance, caloriesToBurn };
+}
+
+/** Calorie surplus relative to goal (legacy helper) */
 export function calculateSurplus(caloriesIn: number, goal: number): number {
   return caloriesIn - goal;
 }
@@ -73,4 +129,3 @@ export function calculateSurplus(caloriesIn: number, goal: number): number {
 export function surplusToFatKg(surplusKcal: number): number {
   return surplusKcal / 7700;
 }
-

@@ -1,7 +1,11 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { todayISO, formatDate } from '@/lib/utils';
-import { surplusToFatKg } from '@/lib/calc/bmr';
+import {
+  calculateEnergyBalance,
+  getProfileTDEE,
+  surplusToFatKg,
+} from '@/lib/calc/bmr';
 import { CalorieRing } from '@/components/CalorieRing';
 import { MacroBar } from '@/components/MacroBar';
 import { DailySummaryCard } from '@/components/DailySummaryCard';
@@ -14,7 +18,8 @@ import {
   AlertCircle,
   ChevronRight,
   TrendingDown,
-  Sparkles
+  Sparkles,
+  Scale
 } from 'lucide-react';
 
 export default async function DashboardPage() {
@@ -51,13 +56,22 @@ export default async function DashboardPage() {
   const logs = foodLogs ?? [];
   const exercises = exerciseLogs ?? [];
 
-  // Calcs
+  // Calorie Calcs
   const caloriesIn = Math.round(logs.reduce((sum, item) => sum + Number(item.calories), 0));
   const caloriesOut = Math.round(exercises.reduce((sum, item) => sum + Number(item.calories_burned), 0));
   const goal = profile?.daily_calorie_goal ?? 2000;
+  const tdee = getProfileTDEE(profile);
+
+  // Energy Balance: vsGoal and vsMaintenance
+  const { vsGoal, vsMaintenance, caloriesToBurn } = calculateEnergyBalance(
+    caloriesIn,
+    goal,
+    tdee,
+    caloriesOut
+  );
+
   const netCalories = caloriesIn - caloriesOut;
-  const surplus = caloriesIn - goal;
-  const fatEquivalentKg = Math.abs(surplusToFatKg(surplus)).toFixed(2);
+  const fatEquivalentKg = Math.abs(surplusToFatKg(vsMaintenance)).toFixed(2);
 
   // Macros
   const proteinG = Math.round(logs.reduce((sum, item) => sum + Number(item.protein_g ?? 0), 0));
@@ -83,7 +97,7 @@ export default async function DashboardPage() {
             <AlertCircle className="h-5 w-5 text-amber-600 shrink-0" />
             <div>
               <p className="text-sm font-semibold text-amber-900">Complete your profile for personalised goals</p>
-              <p className="text-xs text-amber-700">Set your weight, height, and activity level to compute accurate BMR and burn targets.</p>
+              <p className="text-xs text-amber-700">Set your weight, height, and activity level to compute accurate BMR, TDEE, and burn targets.</p>
             </div>
           </div>
           <Link
@@ -98,7 +112,7 @@ export default async function DashboardPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Today's Overview</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Today&apos;s Overview</h1>
           <p className="text-sm text-gray-500 mt-1">{formatDate(today)} • All values are estimated</p>
         </div>
         <div className="flex items-center gap-2">
@@ -122,43 +136,58 @@ export default async function DashboardPage() {
         {/* Calorie Ring */}
         <div className="flex flex-col items-center justify-center p-2 lg:border-r border-gray-100">
           <CalorieRing caloriesIn={caloriesIn} goal={goal} size={200} />
-          <p className="text-xs text-gray-400 mt-2 font-medium">Estimated daily budget</p>
+          <p className="text-xs text-gray-400 mt-2 font-medium">Daily budget: {goal} kcal</p>
         </div>
 
-        {/* Macros Breakdown */}
+        {/* Macros & Energy Balance */}
         <div className="flex flex-col justify-center space-y-4 lg:col-span-2">
           <div>
             <h2 className="text-base font-semibold text-gray-900">Macronutrients</h2>
-            <p className="text-xs text-gray-500">Distribution of today's logged calories</p>
+            <p className="text-xs text-gray-500">Distribution of today&apos;s logged calories</p>
           </div>
           <MacroBar proteinG={proteinG} carbsG={carbsG} fatG={fatG} />
 
-          {/* Surplus / Deficit Notice */}
-          <div className="mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-3">
-              <div className={`p-2.5 rounded-xl ${surplus > 0 ? 'bg-orange-100 text-orange-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                {surplus > 0 ? <Flame className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-900">
-                  {surplus > 0 ? `Surplus of ${surplus} kcal` : `${Math.abs(surplus)} kcal remaining under goal`}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {surplus > 0
-                    ? `Roughly equivalent to ~${fatEquivalentKg} kg body fat if sustained over weeks`
-                    : 'Great job maintaining your target range today!'}
-                </p>
-              </div>
-            </div>
+          {/* Energy Balance & Surplus Banner */}
+          <div className="mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-3">
+            <div className="flex items-start justify-between flex-wrap gap-3">
+              <div className="flex items-start gap-3">
+                <div className={`p-2.5 rounded-xl shrink-0 ${vsMaintenance > 0 ? 'bg-orange-100 text-orange-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                  {vsMaintenance > 0 ? <Flame className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Energy Balance</span>
+                    {vsMaintenance > 0 ? (
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-100 text-orange-800">
+                        True Surplus: +{vsMaintenance} kcal
+                      </span>
+                    ) : (
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                        Deficit: {vsMaintenance} kcal vs Maintenance
+                      </span>
+                    )}
+                  </div>
 
-            {surplus > 0 && (
-              <Link
-                href={`/burn-calculator?surplus=${surplus}`}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-200"
-              >
-                <Sparkles className="h-3.5 w-3.5" /> Calculate Burn Plan
-              </Link>
-            )}
+                  <p className="text-sm font-semibold text-gray-900">
+                    {vsGoal > 0 ? `${vsGoal} kcal over daily goal` : `${Math.abs(vsGoal)} kcal remaining under goal`}
+                  </p>
+
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    vs Goal ({goal} kcal): <strong>{vsGoal > 0 ? `+${vsGoal}` : vsGoal} kcal</strong> • vs Maintenance (TDEE {tdee} kcal - {caloriesOut} kcal burn): <strong>{vsMaintenance > 0 ? `+${vsMaintenance} kcal` : `${vsMaintenance} kcal`}</strong>
+                    {vsMaintenance > 0 && ` (~${fatEquivalentKg} kg fat equivalent if accumulated over weeks)`}
+                  </p>
+                </div>
+              </div>
+
+              {caloriesToBurn > 0 && (
+                <Link
+                  href={`/burn-calculator?surplus=${caloriesToBurn}`}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 rounded-xl transition-colors border border-emerald-300 shadow-2xs shrink-0"
+                >
+                  <Sparkles className="h-4 w-4 text-emerald-700" /> Burn {caloriesToBurn} kcal
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </div>
