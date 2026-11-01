@@ -104,7 +104,7 @@ export function formatDuration(minutes: number): string {
 export function suggestDays(
   caloriesKcal: number,
   weightKg: number | null | undefined,
-  exercises: Exercise[] = []
+  _exercises: Exercise[] = []
 ): number {
   if (caloriesKcal <= 0 || isNaN(caloriesKcal) || !weightKg || weightKg <= 0 || isNaN(weightKg)) {
     return 1;

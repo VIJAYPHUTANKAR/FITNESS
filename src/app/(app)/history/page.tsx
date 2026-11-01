@@ -9,10 +9,6 @@ import WeightChart, { type WeightChartDataPoint } from '@/components/WeightChart
 import MacroChart from '@/components/MacroChart';
 import WeeklyStreak from '@/components/WeeklyStreak';
 import {
-  CalendarDays,
-  TrendingUp,
-  Flame,
-  Utensils,
   Loader2,
   ChevronDown,
   ChevronUp

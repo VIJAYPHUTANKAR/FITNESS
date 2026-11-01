@@ -19,7 +19,6 @@ import {
   ChevronRight,
   TrendingDown,
   Sparkles,
-  Scale
 } from 'lucide-react';
 
 export default async function DashboardPage() {

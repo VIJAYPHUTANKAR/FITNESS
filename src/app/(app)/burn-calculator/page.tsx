@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { AlertTriangle, Info, Sparkles, Bookmark, Calendar, Trash2, ShieldAlert } from 'lucide-react';
+import { AlertTriangle, Info, Bookmark, Trash2, ShieldAlert } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import {
   calculateBurnPlan,
   suggestDays,
-  formatDuration,
   type BurnResult,
   type Exercise,
 } from '@/lib/calc/burn';
@@ -28,13 +27,11 @@ function BurnCalculatorInner() {
   );
   const [days, setDays] = useState<number>(1);
   const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [results, setResults] = useState<BurnResult[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState('');
   const [savedPlans, setSavedPlans] = useState<BurnPlan[]>([]);
-  const [loadingPlans, setLoadingPlans] = useState(true);
 
   // Load user profile
   useEffect(() => {
@@ -68,12 +65,10 @@ function BurnCalculatorInner() {
 
   // Load saved plans
   const loadSavedPlans = useCallback(async () => {
-    setLoadingPlans(true);
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      setLoadingPlans(false);
       return;
     }
     const { data } = await supabase
@@ -84,22 +79,20 @@ function BurnCalculatorInner() {
       .limit(5);
 
     if (data) setSavedPlans(data);
-    setLoadingPlans(false);
   }, [supabase]);
 
   useEffect(() => {
-    loadSavedPlans();
+    void (async () => {
+      await loadSavedPlans();
+    })();
   }, [loadSavedPlans]);
 
-  // Recalculate results whenever inputs change
-  useEffect(() => {
-    if (calories > 0 && profile?.weight_kg && exercises.length > 0) {
-      const plan = calculateBurnPlan(calories, profile.weight_kg, exercises, days);
-      setResults(plan);
-    } else {
-      setResults([]);
-    }
-  }, [calories, days, exercises, profile]);
+  // Derived burn results based on current parameters
+  const results: BurnResult[] = useMemo(() => {
+    return calories > 0 && profile?.weight_kg && exercises.length > 0
+      ? calculateBurnPlan(calories, profile.weight_kg, exercises, days)
+      : [];
+  }, [calories, profile, exercises, days]);
 
   const handleAutoSuggest = useCallback(() => {
     if (!profile?.weight_kg || exercises.length === 0 || calories <= 0) return;

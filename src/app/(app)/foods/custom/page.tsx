@@ -59,7 +59,9 @@ export default function CustomFoodsPage() {
   }, [supabase]);
 
   useEffect(() => {
-    fetchCustomFoods();
+    void (async () => {
+      await fetchCustomFoods();
+    })();
   }, [fetchCustomFoods]);
 
   async function handleAddFood(e: React.FormEvent) {

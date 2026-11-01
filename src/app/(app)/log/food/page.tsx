@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { todayISO, formatDate } from '@/lib/utils';
+import { todayISO } from '@/lib/utils';
 import type { FoodLog, MealType } from '@/types/database';
 import FoodLogItem from '@/components/FoodLogItem';
 import { FoodSearch } from '@/components/FoodSearch';
@@ -15,8 +15,7 @@ import {
   Plus,
   Utensils,
   Loader2,
-  X,
-  PieChart
+  X
 } from 'lucide-react';
 
 const MEALS: { type: MealType; title: string; icon: string }[] = [

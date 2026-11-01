@@ -6,7 +6,6 @@ import {
   Cell,
   Tooltip,
   ResponsiveContainer,
-  type TooltipProps,
 } from 'recharts';
 
 const MACRO_COLORS = {
@@ -44,27 +43,7 @@ function CustomTooltip({ active, payload }: any) {
   );
 }
 
-/** Center label rendered inside the pie hole */
-function CenterLabel({
-  cx,
-  cy,
-  totalKcal,
-}: {
-  cx: number;
-  cy: number;
-  totalKcal: number;
-}) {
-  return (
-    <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle">
-      <tspan x={cx} dy="-0.5em" fontSize={20} fontWeight="700" fill="#111827">
-        {totalKcal.toLocaleString()}
-      </tspan>
-      <tspan x={cx} dy="1.4em" fontSize={11} fill="#9ca3af">
-        kcal*
-      </tspan>
-    </text>
-  );
-}
+
 
 interface MacroChartProps {
   proteinG: number;

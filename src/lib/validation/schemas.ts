@@ -22,17 +22,17 @@ export const ProfileFormSchema = z.object({
     }, 'Age must be between 10 and 120 years'),
   gender: GenderSchema,
   height_cm: z
-    .number({ invalid_type_error: 'Height must be a number' })
+    .number({ message: 'Height must be a number' })
     .min(50, 'Height must be at least 50 cm')
     .max(260, 'Height must be 260 cm or less'),
   weight_kg: z
-    .number({ invalid_type_error: 'Weight must be a number' })
+    .number({ message: 'Weight must be a number' })
     .min(20, 'Weight must be at least 20 kg')
     .max(500, 'Weight must be 500 kg or less'),
   activity_level: ActivityLevelSchema,
   goal_type: GoalTypeSchema,
   daily_calorie_goal: z
-    .number({ invalid_type_error: 'Calorie goal must be a number' })
+    .number({ message: 'Calorie goal must be a number' })
     .min(500, 'Calorie goal must be at least 500 kcal')
     .max(10000, 'Calorie goal cannot exceed 10,000 kcal'),
 });
@@ -44,7 +44,7 @@ export const FoodLogFormSchema = z.object({
   logged_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format'),
   meal_type: MealTypeSchema,
   quantity_grams: z
-    .number({ invalid_type_error: 'Quantity must be a number' })
+    .number({ message: 'Quantity must be a number' })
     .positive('Quantity must be greater than 0')
     .max(5000, 'Quantity cannot exceed 5,000 grams'),
   calories: z
@@ -67,7 +67,7 @@ export const CustomFoodFormSchema = z.object({
     .max(5000, 'Serving size cannot exceed 5,000 grams')
     .default(100),
   calories_per_100g: z
-    .number({ invalid_type_error: 'Calories must be a number' })
+    .number({ message: 'Calories must be a number' })
     .min(0, 'Calories cannot be negative')
     .max(900, 'Calories cannot exceed 900 kcal/100g (pure fat limit)'),
   protein_g: z.number().min(0).max(100).optional().nullable(),
@@ -82,7 +82,7 @@ export const ExerciseLogFormSchema = z.object({
   exercise_name: z.string().min(1, 'Exercise name is required').max(255),
   logged_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format'),
   duration_min: z
-    .number({ invalid_type_error: 'Duration must be a number' })
+    .number({ message: 'Duration must be a number' })
     .positive('Duration must be greater than 0')
     .max(600, 'Duration cannot exceed 600 minutes (10 hours)'),
   calories_burned: z
@@ -95,7 +95,7 @@ export const ExerciseLogFormSchema = z.object({
 export const WeightLogFormSchema = z.object({
   logged_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format'),
   weight_kg: z
-    .number({ invalid_type_error: 'Weight must be a number' })
+    .number({ message: 'Weight must be a number' })
     .min(20, 'Weight must be at least 20 kg')
     .max(500, 'Weight cannot exceed 500 kg'),
 });
