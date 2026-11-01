@@ -4,6 +4,7 @@
 
 export { DashboardScreen } from './components/DashboardScreen';
 export { DashboardDateSync } from './components/DashboardDateSync';
+export { ThaliPlate } from './components/ThaliPlate';
 export { CalorieRing } from './components/CalorieRing';
 export { MacroBar } from './components/MacroBar';
 export { DailySummaryCard } from './components/DailySummaryCard';

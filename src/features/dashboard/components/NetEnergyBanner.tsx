@@ -1,9 +1,7 @@
-/**
- * NetEnergyBanner: Visual indicator of net energy intake and expenditure based on BMR baseline
- * maintenance and logged workout expenditure. Rendered inside DashboardScreen.
- */
+'use client';
 
-import { Flame, TrendingDown, Info } from 'lucide-react';
+import * as React from 'react';
+import { Info, X } from 'lucide-react';
 import type { DashboardMetrics } from '../types';
 
 interface NetEnergyBannerProps {
@@ -11,11 +9,11 @@ interface NetEnergyBannerProps {
 }
 
 export function NetEnergyBanner({ metrics }: NetEnergyBannerProps) {
+  const [showInfo, setShowInfo] = React.useState(false);
+
   const {
     energyBalance,
     hasProfileMetrics,
-    vsGoal,
-    goal,
     caloriesIn,
     baselineMaintenance,
     caloriesOut,
@@ -23,71 +21,54 @@ export function NetEnergyBanner({ metrics }: NetEnergyBannerProps) {
   } = metrics;
 
   return (
-    <div className="mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-3">
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div className="flex items-start gap-3">
-          <div
-            className={`p-2.5 rounded-xl shrink-0 ${
-              energyBalance > 0
-                ? 'bg-orange-100 text-orange-600'
-                : 'bg-emerald-100 text-emerald-600'
-            }`}
-          >
-            {energyBalance > 0 ? (
-              <Flame className="h-5 w-5" />
-            ) : (
-              <TrendingDown className="h-5 w-5" />
-            )}
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                Estimated Net Energy (baseline + logged exercise)
-              </span>
-              {hasProfileMetrics ? (
-                energyBalance > 0 ? (
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-100 text-orange-800">
-                    Net: +{energyBalance} kcal
-                  </span>
-                ) : (
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                    Net: {energyBalance} kcal
-                  </span>
-                )
-              ) : (
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
-                  Profile metrics needed
-                </span>
-              )}
-            </div>
+    <div className="w-full rounded-[16px] bg-[var(--color-plate)] border border-[var(--color-border)] p-4 text-left space-y-2">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs sm:text-sm text-[var(--color-neel)] leading-relaxed">
+          <span className="font-semibold">Estimated Net Energy:</span>{' '}
+          {hasProfileMetrics ? (
+            <span className="tabular-nums font-bold">
+              {energyBalance > 0 ? `+${energyBalance}` : energyBalance} kcal
+            </span>
+          ) : (
+            <span className="text-[var(--color-neel-muted)]">Profile setup needed</span>
+          )}{' '}
+          <span className="text-xs text-[var(--color-neel-muted)] hidden sm:inline">
+            (intake minus baseline maintenance and exercise)
+          </span>
+        </p>
 
-            <p className="text-sm font-semibold text-gray-900">
-              {vsGoal > 0
-                ? `${vsGoal} kcal over daily goal (${goal} kcal)`
-                : `${Math.abs(vsGoal)} kcal remaining of daily goal (${goal} kcal)`}
-            </p>
-
-            {hasProfileMetrics ? (
-              <div className="text-xs text-gray-500 leading-relaxed space-y-1">
-                <p>
-                  Intake ({caloriesIn} kcal) &minus; [Baseline Maintenance ({baselineMaintenance} kcal) + Exercise ({caloriesOut} kcal)] ={' '}
-                  <strong>{energyBalance > 0 ? `+${energyBalance} kcal` : `${energyBalance} kcal`}</strong>
-                </p>
-                <div className="flex items-center gap-1 text-[11px] text-gray-400">
-                  <Info className="h-3.5 w-3.5 shrink-0" />
-                  <span>
-                    Baseline maintenance is BMR ({bmr} kcal) &times; 1.2 (sedentary baseline, avoiding double-counting workouts).
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <p className="text-xs text-amber-700">
-                Please complete onboarding to compute your physical baseline maintenance and net energy accurately.
-              </p>
-            )}
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={() => setShowInfo(!showInfo)}
+          aria-expanded={showInfo}
+          aria-label="Explain net energy formula"
+          className="flex h-8 w-8 items-center justify-center rounded-[8px] text-[var(--color-neel-muted)] hover:bg-[var(--color-steel)] hover:text-[var(--color-neel)] transition-colors min-h-[36px] min-w-[36px] shrink-0"
+        >
+          {showInfo ? <X className="h-4 w-4" /> : <Info className="h-4 w-4" />}
+        </button>
       </div>
+
+      {showInfo && (
+        <div className="pt-2 border-t border-[var(--color-border-subtle)] text-xs text-[var(--color-neel-muted)] space-y-1.5 leading-relaxed">
+          {hasProfileMetrics ? (
+            <>
+              <p>
+                Intake ({caloriesIn} kcal) &minus; [Baseline Maintenance ({baselineMaintenance} kcal) + Exercise ({caloriesOut} kcal)] ={' '}
+                <strong className="text-[var(--color-neel)] tabular-nums">
+                  {energyBalance > 0 ? `+${energyBalance}` : energyBalance} kcal
+                </strong>
+              </p>
+              <p className="text-[11px] opacity-80">
+                Baseline maintenance uses your BMR ({bmr} kcal) &times; 1.2 to prevent double-counting logged workout sessions.
+              </p>
+            </>
+          ) : (
+            <p className="text-[11px] text-[var(--color-chukandar)]">
+              Please complete onboarding or set your height and weight in Profile to compute your physical baseline maintenance and net energy accurately.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
