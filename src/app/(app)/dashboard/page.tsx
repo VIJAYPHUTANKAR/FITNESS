@@ -4,7 +4,6 @@ import { todayISO, formatDate } from '@/lib/utils';
 import {
   calculateEnergyBalance,
   getProfileBMR,
-  getProfileTDEE,
   surplusToFatKg,
 } from '@/lib/calc/bmr';
 import { CalorieRing } from '@/components/CalorieRing';
@@ -62,7 +61,6 @@ export default async function DashboardPage() {
   const caloriesOut = Math.round(exercises.reduce((sum, item) => sum + Number(item.calories_burned), 0));
   const goal = profile?.daily_calorie_goal ?? 2000;
   const bmr = getProfileBMR(profile);
-  const tdee = getProfileTDEE(profile);
 
   // Energy Balance model: baselineMaintenance (BMR * 1.2) + logged exercise
   const {
