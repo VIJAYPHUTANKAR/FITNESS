@@ -16,31 +16,50 @@ export function toISODate(date: Date): string {
 export function formatSupabaseError(error: unknown): string {
   if (!error) return 'An unexpected error occurred. Please try again.';
 
-  const raw =
-    typeof error === 'object' && error !== null && 'message' in error
-      ? String((error as { message: unknown }).message)
-      : String(error);
+  if (typeof window === 'undefined') {
+    // Log server-side diagnostics only
+    console.error('[Supabase Error]:', error);
+  }
 
-  if (raw.includes('duplicate key') || raw.includes('unique constraint')) {
+  const errObj = typeof error === 'object' && error !== null ? (error as Record<string, unknown>) : null;
+  const code = errObj && typeof errObj.code === 'string' ? errObj.code : '';
+  const raw = errObj && 'message' in errObj ? String(errObj.message) : String(error);
+
+  // 23505: Unique constraint violation
+  if (code === '23505' || raw.includes('duplicate key') || raw.includes('unique constraint')) {
     return 'An entry with this data already exists for this date.';
   }
-  if (raw.includes('violates check constraint') || raw.includes('check constraint')) {
-    return 'The entered values are outside safe physical bounds. Please check your numbers.';
+
+  // 23503: Foreign key violation
+  if (code === '23503' || raw.includes('violates foreign key constraint') || raw.includes('foreign key')) {
+    return 'This record is currently in use or references an item that does not exist.';
   }
-  if (raw.includes('row-level security') || raw.includes('violates row-level security')) {
+
+  // 42501: Row-level security / Insufficient privilege
+  if (code === '42501' || raw.includes('row-level security') || raw.includes('permission denied')) {
     return 'You do not have permission to modify this record.';
   }
+
+  // Check constraint violation
+  if (code === '23514' || raw.includes('violates check constraint') || raw.includes('check constraint')) {
+    return 'The entered values are outside safe physical bounds. Please check your numbers.';
+  }
+
+  // Auth / session expiration
   if (raw.includes('JWT') || raw.includes('token') || raw.includes('Invalid Refresh Token')) {
     return 'Your login session has expired. Please sign in again.';
   }
-  if (raw.includes('Failed to fetch') || raw.includes('NetworkError')) {
+
+  // Network connectivity
+  if (raw.includes('Failed to fetch') || raw.includes('NetworkError') || raw.includes('fetch failed')) {
     return 'Unable to reach the server. Please check your network connection.';
   }
+
+  // Login credentials
   if (raw.includes('Invalid login credentials')) {
     return 'Invalid email or password. Please verify your credentials.';
   }
 
-  // Fallback sanitized message
-  return raw.replace(/violates foreign key constraint [^,]+/g, 'Invalid reference')
-            .replace(/relation "[^"]+" does not exist/g, 'Service error');
+  // Safe fallback: never leak raw backend messages or schema names to the UI
+  return 'An unexpected error occurred. Please try again.';
 }
