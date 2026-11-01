@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized: Authentication required' }, { status: 401 });
   }
 
   // 2. Dev rate-limiting check
