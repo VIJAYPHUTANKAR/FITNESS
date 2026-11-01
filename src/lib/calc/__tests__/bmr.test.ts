@@ -6,6 +6,7 @@ import {
   ageFromDOB,
   surplusToFatKg,
   calculateEnergyBalance,
+  getProfileBMR,
   getProfileTDEE,
 } from '../bmr';
 
@@ -63,69 +64,91 @@ describe('calculateCalorieGoal', () => {
   });
 });
 
-describe('calculateEnergyBalance (Task 5 Surplus Logic)', () => {
-  // Scenario 1: User on a fat-loss goal eats exactly at maintenance
-  test('intake at maintenance on a fat-loss goal: true surplus is 0, caloriesToBurn is 0', () => {
-    const tdee = 2400;
-    const dailyGoal = 2000; // TDEE - 400 fat loss goal
-    const intake = 2400; // ate at maintenance
-    const { vsGoal, vsMaintenance, caloriesToBurn } = calculateEnergyBalance(intake, dailyGoal, tdee, 0);
+describe('calculateEnergyBalance (Consistent Energy Model)', () => {
+  const bmr = 1500;
+  // baselineMaintenance = BMR * 1.2 = 1800
+  const baseline = 1800;
 
-    // vsGoal shows +400 (ate more than deficit target)
-    expect(vsGoal).toBe(400);
-    // vsMaintenance shows 0 (true thermodynamic surplus is zero)
-    expect(vsMaintenance).toBe(0);
-    // caloriesToBurn to send to calculator must be 0
-    expect(caloriesToBurn).toBe(0);
+  test('eating at baseline gives energyBalance = 0 and caloriesToBurn = 0', () => {
+    const dailyGoal = 1600; // Deficit goal
+    const intake = 1800; // Eating at baseline maintenance
+    const res = calculateEnergyBalance(intake, dailyGoal, bmr, 0);
+
+    expect(res.baselineMaintenance).toBe(baseline);
+    expect(res.energyBalance).toBe(0);
+    expect(res.caloriesToBurn).toBe(0);
+    expect(res.vsGoal).toBe(200); // 1800 - 1600 = +200 vs deficit goal
+    expect(res.hasProfileMetrics).toBe(true);
   });
 
-  // Scenario 2: Intake above maintenance
-  test('intake above maintenance creates true surplus and caloriesToBurn > 0', () => {
-    const tdee = 2000;
+  test('eating above baseline gives positive energyBalance and caloriesToBurn > 0', () => {
     const dailyGoal = 1600;
-    const intake = 2500; // 500 kcal above maintenance
-    const { vsGoal, vsMaintenance, caloriesToBurn } = calculateEnergyBalance(intake, dailyGoal, tdee, 0);
+    const intake = 2100; // 300 kcal above baseline
+    const res = calculateEnergyBalance(intake, dailyGoal, bmr, 0);
 
-    expect(vsGoal).toBe(900);
-    expect(vsMaintenance).toBe(500);
-    expect(caloriesToBurn).toBe(500);
+    expect(res.energyBalance).toBe(300);
+    expect(res.caloriesToBurn).toBe(300);
+    expect(res.vsGoal).toBe(500);
   });
 
-  // Scenario 3: Intake below goal
-  test('intake below goal: negative surplus and caloriesToBurn is 0', () => {
-    const tdee = 2200;
+  test('logging exercise reduces the balance and caloriesToBurn', () => {
+    const dailyGoal = 1600;
+    const intake = 2100; // +300 above baseline
+    const exerciseBurned = 200;
+    const res = calculateEnergyBalance(intake, dailyGoal, bmr, exerciseBurned);
+
+    // 2100 - (1800 + 200) = +100
+    expect(res.energyBalance).toBe(100);
+    expect(res.caloriesToBurn).toBe(100);
+  });
+
+  test('logging exercise exceeding surplus brings energyBalance negative and caloriesToBurn to 0', () => {
     const dailyGoal = 1800;
-    const intake = 1500;
-    const { vsGoal, vsMaintenance, caloriesToBurn } = calculateEnergyBalance(intake, dailyGoal, tdee, 0);
+    const intake = 2000; // +200 above baseline
+    const exerciseBurned = 350;
+    const res = calculateEnergyBalance(intake, dailyGoal, bmr, exerciseBurned);
 
-    expect(vsGoal).toBe(-300);
-    expect(vsMaintenance).toBe(-700);
-    expect(caloriesToBurn).toBe(0);
+    // 2000 - (1800 + 350) = -150
+    expect(res.energyBalance).toBe(-150);
+    expect(res.caloriesToBurn).toBe(0);
   });
 
-  // Scenario 4: Exercise reducing surplus
-  test('exercise reduces the true surplus and caloriesToBurn', () => {
-    const tdee = 2000;
-    const dailyGoal = 1600;
-    const intake = 2500; // +500 above maintenance
-    const exerciseBurned = 300; // burned 300 kcal
-    const { vsGoal, vsMaintenance, caloriesToBurn } = calculateEnergyBalance(intake, dailyGoal, tdee, exerciseBurned);
+  test('missing profile returns a safe empty state without crashing', () => {
+    const resNull = calculateEnergyBalance(2000, 2000, 0, 0);
+    expect(resNull.hasProfileMetrics).toBe(false);
+    expect(resNull.energyBalance).toBe(0);
+    expect(resNull.caloriesToBurn).toBe(0);
 
-    expect(vsGoal).toBe(900);
-    expect(vsMaintenance).toBe(200); // 2500 - (2000 + 300) = +200
-    expect(caloriesToBurn).toBe(200);
+    const bmrEmpty = getProfileBMR(null);
+    expect(bmrEmpty).toBe(0);
+    const resEmpty = calculateEnergyBalance(2000, 2000, bmrEmpty, 0);
+    expect(resEmpty.hasProfileMetrics).toBe(false);
+    expect(resEmpty.energyBalance).toBe(0);
+    expect(resEmpty.caloriesToBurn).toBe(0);
   });
 
-  // Scenario 5: Exercise exceeding the food surplus
-  test('exercise exceeding surplus brings vsMaintenance negative and caloriesToBurn to 0', () => {
-    const tdee = 2000;
-    const dailyGoal = 2000;
-    const intake = 2200;
-    const exerciseBurned = 400;
-    const { vsMaintenance, caloriesToBurn } = calculateEnergyBalance(intake, dailyGoal, tdee, exerciseBurned);
+  test('fat-loss goal does not change energyBalance (independence from deficit target)', () => {
+    const intake = 2000;
+    const burn = 100;
+    // Goal A: aggressive cut (-500) = 1500 kcal
+    const resA = calculateEnergyBalance(intake, 1500, bmr, burn);
+    // Goal B: maintenance goal = 2000 kcal
+    const resB = calculateEnergyBalance(intake, 2000, bmr, burn);
+    // Goal C: bulking goal (+300) = 2300 kcal
+    const resC = calculateEnergyBalance(intake, 2300, bmr, burn);
 
-    expect(vsMaintenance).toBe(-200);
-    expect(caloriesToBurn).toBe(0);
+    // physical energy balance must be identical across all goals
+    expect(resA.energyBalance).toBe(resB.energyBalance);
+    expect(resB.energyBalance).toBe(resC.energyBalance);
+    expect(resA.energyBalance).toBe(2000 - (1800 + 100)); // +100
+    expect(resA.caloriesToBurn).toBe(100);
+    expect(resB.caloriesToBurn).toBe(100);
+    expect(resC.caloriesToBurn).toBe(100);
+
+    // but vsGoal differs as intended
+    expect(resA.vsGoal).toBe(500);
+    expect(resB.vsGoal).toBe(0);
+    expect(resC.vsGoal).toBe(-300);
   });
 });
 

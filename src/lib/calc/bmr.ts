@@ -71,6 +71,21 @@ export function ageFromDOB(dob: Date): number {
   return Math.max(1, Math.min(120, age));
 }
 
+/** Computes BMR from a profile object safely without crashing on missing data */
+export function getProfileBMR(profile: {
+  weight_kg?: number | null;
+  height_cm?: number | null;
+  date_of_birth?: string | null;
+  gender?: Gender | null;
+} | null): number {
+  if (!profile || !profile.weight_kg || !profile.height_cm) {
+    return 0;
+  }
+  const age = profile.date_of_birth ? ageFromDOB(new Date(profile.date_of_birth)) : 25;
+  const gender: Gender = profile.gender || 'other';
+  return Math.round(calculateBMR(Number(profile.weight_kg), Number(profile.height_cm), age, gender));
+}
+
 /** Computes TDEE from a profile object safely without crashing on missing data */
 export function getProfileTDEE(profile: {
   weight_kg?: number | null;
@@ -92,32 +107,59 @@ export function getProfileTDEE(profile: {
 export interface EnergyBalance {
   /** Intake minus daily target goal (positive = over goal, negative = remaining budget) */
   vsGoal: number;
-  /** Intake minus (TDEE + exercise burned). True thermodynamic surplus / deficit */
-  vsMaintenance: number;
-  /** Safe surplus amount to send to burn calculator (strictly > 0, otherwise 0) */
+  /** Baseline sedentary expenditure: BMR * 1.2 (non-exercise baseline) */
+  baselineMaintenance: number;
+  /** Intake minus (baselineMaintenance + loggedExerciseBurned). True thermodynamic balance */
+  energyBalance: number;
+  /** Safe surplus amount to send to burn calculator (energyBalance clamped to >= 0) */
   caloriesToBurn: number;
+  /** Whether the user has complete profile metrics to compute BMR */
+  hasProfileMetrics: boolean;
 }
 
 /**
- * Calculates both vsGoal and vsMaintenance correctly.
- * For a user wanting to burn off true energy surplus, only vsMaintenance > 0 should be sent.
+ * Calculates energy balance without double-counting exercise.
+ * Formula:
+ * - baselineMaintenance = BMR * 1.2 (sedentary baseline, excluding workout activity)
+ * - energyBalance = intake - (baselineMaintenance + loggedExerciseBurned)
+ * - caloriesToBurn = Math.max(0, energyBalance)
+ *
+ * Notice: dailyGoal (which factors in activity-level TDEE) affects vsGoal,
+ * but does NOT alter the physical energyBalance.
  */
 export function calculateEnergyBalance(
   intake: number,
   dailyGoal: number,
-  tdee: number,
-  exerciseBurned = 0
+  bmr: number,
+  loggedExerciseBurned = 0
 ): EnergyBalance {
   const safeIntake = Math.max(0, intake);
-  const safeGoal = Math.max(500, dailyGoal);
-  const safeTdee = Math.max(500, tdee);
-  const safeBurn = Math.max(0, exerciseBurned);
+  const safeGoal = Math.max(0, dailyGoal);
+  const safeBurn = Math.max(0, loggedExerciseBurned);
 
   const vsGoal = Math.round(safeIntake - safeGoal);
-  const vsMaintenance = Math.round(safeIntake - (safeTdee + safeBurn));
-  const caloriesToBurn = Math.max(0, vsMaintenance);
 
-  return { vsGoal, vsMaintenance, caloriesToBurn };
+  if (!bmr || bmr <= 0 || isNaN(bmr)) {
+    return {
+      vsGoal,
+      baselineMaintenance: 0,
+      energyBalance: 0,
+      caloriesToBurn: 0,
+      hasProfileMetrics: false,
+    };
+  }
+
+  const baselineMaintenance = Math.round(bmr * 1.2);
+  const energyBalance = Math.round(safeIntake - (baselineMaintenance + safeBurn));
+  const caloriesToBurn = Math.max(0, energyBalance);
+
+  return {
+    vsGoal,
+    baselineMaintenance,
+    energyBalance,
+    caloriesToBurn,
+    hasProfileMetrics: true,
+  };
 }
 
 /** Calorie surplus relative to goal (legacy helper) */
