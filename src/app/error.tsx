@@ -11,32 +11,31 @@ export default function ErrorBoundary({
 }: {
   error: Error & { digest?: string };
   reset: () => void;
-}) {
+  }) {
   useEffect(() => {
     // Log sanitized error message without exposing full stack to browser UI
     console.error('Application runtime error:', error.message);
   }, [error]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50 text-center">
-      <div className="w-16 h-16 rounded-3xl bg-red-100 flex items-center justify-center text-red-600 mb-6 shadow-sm">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-steel text-center">
+      <div className="w-16 h-16 rounded-2xl bg-chukandar-50 border border-chukandar-200 flex items-center justify-center text-chukandar-600 mb-6 shadow-xs">
         <AlertCircle className="h-8 w-8" />
       </div>
 
-      <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Something went wrong</h1>
-      <p className="text-gray-500 mt-2 max-w-md text-sm leading-relaxed">
+      <h1 className="text-3xl font-heading font-bold text-ink tracking-tight">Something went wrong</h1>
+      <p className="text-ink/60 mt-2 max-w-md text-sm leading-relaxed">
         An unexpected error occurred while processing your request. Please try again or return to the dashboard.
       </p>
 
       <div className="flex items-center gap-3 mt-8">
-        <Button onClick={() => reset()} className="gap-2">
-          <RotateCcw className="h-4 w-4" /> Try Again
+        <Button onClick={() => reset()} variant="primary" size="md">
+          <RotateCcw className="h-4 w-4 mr-1.5" /> Try Again
         </Button>
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-semibold text-sm transition-all shadow-sm"
-        >
-          <Home className="h-4 w-4" /> Dashboard
+        <Link href="/dashboard">
+          <Button variant="secondary" size="md">
+            <Home className="h-4 w-4 mr-1.5" /> Dashboard
+          </Button>
         </Link>
       </div>
     </div>
