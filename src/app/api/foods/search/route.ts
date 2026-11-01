@@ -1,6 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 
+// ── Rate limiter (Development / local debounce) ─────────────────────────────
+// NOTE: In-memory rate limiting operates per-instance in serverless environments
+// and is intended as a baseline debounce guard. Production abuse prevention is
+// enforced via mandatory Supabase user authentication below (401 for unauthenticated).
 interface RateLimitTracker {
   count: number;
   resetAt: number;
@@ -27,71 +32,100 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
+// ── Output Zod Schema ───────────────────────────────────────────────────────
+const FoodItemSchema = z.object({
+  id: z.number().optional(),
+  name: z.string().min(1).max(255),
+  brand: z.string().nullable().optional(),
+  serving_desc: z.string().min(1).max(100),
+  serving_grams: z.number().positive().max(5000),
+  calories_per_100g: z.number().positive().max(900),
+  protein_g: z.number().min(0).max(100),
+  carbs_g: z.number().min(0).max(100),
+  fat_g: z.number().min(0).max(100),
+  source: z.string().min(1).max(50),
+});
+
+const SearchResponseSchema = z.array(FoodItemSchema);
+
 export async function GET(request: NextRequest) {
-  const ip = request.headers.get('x-forwarded-for') || 'anon';
-  if (!checkRateLimit(ip)) {
-    return NextResponse.json({ error: 'Rate limit exceeded. Please wait a moment.' }, { status: 429 });
+  // 1. Enforce authentication
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
 
-  const { searchParams } = new URL(request.url);
-  const q = searchParams.get('q')?.trim();
+  // 2. Dev rate-limiting check
+  const ip = request.headers.get('x-forwarded-for') || user.id;
+  if (!checkRateLimit(ip)) {
+    return NextResponse.json(
+      { error: 'Rate limit exceeded. Please wait a moment.' },
+      { status: 429 }
+    );
+  }
 
-  if (!q || q.length < 2) {
+  // 3. Extract & sanitize search query
+  const { searchParams } = new URL(request.url);
+  const rawQ = searchParams.get('q') ?? '';
+
+  // Sanitize: strip PostgREST/SQL special chars (, % _ * \ " ' ( )), cap at 60 chars
+  const sanitizedQ = rawQ
+    .replace(/[,()%_*\\"'`]/g, '')
+    .trim()
+    .slice(0, 60);
+
+  if (sanitizedQ.length < 2) {
     return NextResponse.json([]);
   }
 
-  const supabase = await createClient();
+  const rawResults: unknown[] = [];
 
-  // 1. Search local Supabase foods table
-  const { data: localFoods } = await supabase
-    .from('foods')
-    .select('*')
-    .ilike('name', `%${q}%`)
-    .limit(20);
+  // 4. Query local Supabase foods table
+  try {
+    const { data: localFoods } = await supabase
+      .from('foods')
+      .select('*')
+      .ilike('name', `%${sanitizedQ}%`)
+      .limit(20);
 
-  const results: Array<{
-    id?: number;
-    name: string;
-    brand?: string | null;
-    serving_desc: string;
-    serving_grams: number;
-    calories_per_100g: number;
-    protein_g: number;
-    carbs_g: number;
-    fat_g: number;
-    source: string;
-  }> = [];
-
-  if (localFoods && localFoods.length > 0) {
-    for (const f of localFoods) {
-      results.push({
-        id: f.id,
-        name: f.name,
-        brand: f.brand,
-        serving_desc: f.serving_desc ?? '100 g',
-        serving_grams: Number(f.serving_grams ?? 100),
-        calories_per_100g: Number(f.calories_per_100g),
-        protein_g: Number(f.protein_g ?? 0),
-        carbs_g: Number(f.carbs_g ?? 0),
-        fat_g: Number(f.fat_g ?? 0),
-        source: f.source ?? 'database',
-      });
+    if (localFoods && localFoods.length > 0) {
+      for (const f of localFoods) {
+        const cal = Number(f.calories_per_100g);
+        if (cal > 0 && cal <= 900) {
+          rawResults.push({
+            id: f.id,
+            name: f.name.trim(),
+            brand: f.brand?.trim() || null,
+            serving_desc: f.serving_desc?.trim() || '100 g',
+            serving_grams: Math.max(1, Number(f.serving_grams ?? 100)),
+            calories_per_100g: cal,
+            protein_g: Math.max(0, Number(f.protein_g ?? 0)),
+            carbs_g: Math.max(0, Number(f.carbs_g ?? 0)),
+            fat_g: Math.max(0, Number(f.fat_g ?? 0)),
+            source: f.source || 'database',
+          });
+        }
+      }
     }
+  } catch (err) {
+    console.error('Local food search error:', err);
   }
 
-  // 2. If results are few, fetch from Open Food Facts API with timeout
-  if (results.length < 8) {
+  // 5. Augment with Open Food Facts API if local results are few
+  if (rawResults.length < 8) {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 2500);
 
       const offRes = await fetch(
         `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(
-          q
-        )}&json=1&fields=product_name,brands,nutriments,serving_quantity,serving_size&page_size=6`,
+          sanitizedQ
+        )}&json=1&fields=product_name,brands,nutriments,serving_quantity,serving_size&page_size=8`,
         {
           signal: controller.signal,
-          headers: { 'User-Agent': 'FitCalc-CalorieTracker/1.0' },
+          headers: { 'User-Agent': 'FitCalc-CalorieTracker/1.0 (contact@example.com)' },
         }
       );
       clearTimeout(timeoutId);
@@ -100,33 +134,60 @@ export async function GET(request: NextRequest) {
         const offData = await offRes.json();
         if (offData.products && Array.isArray(offData.products)) {
           for (const p of offData.products) {
-            const name = p.product_name?.trim();
+            const name = typeof p.product_name === 'string' ? p.product_name.trim() : '';
             if (!name) continue;
 
-            const kcal =
-              p.nutriments?.['energy-kcal_100g'] ??
-              (p.nutriments?.energy_100g ? Math.round(p.nutriments.energy_100g / 4.184) : 0);
+            // Extract calories per 100g; handle kcal vs kJ
+            let kcal: number | null = null;
+            const nutriments = p.nutriments || {};
 
-            if (kcal > 0) {
-              results.push({
-                name,
-                brand: p.brands || null,
-                serving_desc: p.serving_size || '100 g',
-                serving_grams: Number(p.serving_quantity) || 100,
-                calories_per_100g: Number(kcal),
-                protein_g: Number(p.nutriments?.proteins_100g || 0),
-                carbs_g: Number(p.nutriments?.carbohydrates_100g || 0),
-                fat_g: Number(p.nutriments?.fat_100g || 0),
-                source: 'openfoodfacts',
-              });
+            if (typeof nutriments['energy-kcal_100g'] === 'number' && !isNaN(nutriments['energy-kcal_100g'])) {
+              kcal = nutriments['energy-kcal_100g'];
+            } else if (typeof nutriments.energy_100g === 'number' && !isNaN(nutriments.energy_100g)) {
+              // Convert kJ to kcal
+              kcal = nutriments.energy_100g / 4.184;
             }
+
+            // Discard invalid, 0, negative, or > 900 kcal/100g
+            if (kcal === null || kcal <= 0 || kcal > 900 || isNaN(kcal)) {
+              continue;
+            }
+
+            const pG = Math.max(0, Math.min(100, Number(nutriments.proteins_100g) || 0));
+            const cG = Math.max(0, Math.min(100, Number(nutriments.carbohydrates_100g) || 0));
+            const fG = Math.max(0, Math.min(100, Number(nutriments.fat_100g) || 0));
+            const sG = Math.max(1, Math.min(5000, Number(p.serving_quantity) || 100));
+
+            rawResults.push({
+              name,
+              brand: typeof p.brands === 'string' && p.brands.trim() ? p.brands.trim() : null,
+              serving_desc: typeof p.serving_size === 'string' && p.serving_size.trim() ? p.serving_size.trim() : '100 g',
+              serving_grams: sG,
+              calories_per_100g: Math.round(kcal * 10) / 10,
+              protein_g: Math.round(pG * 10) / 10,
+              carbs_g: Math.round(cG * 10) / 10,
+              fat_g: Math.round(fG * 10) / 10,
+              source: 'openfoodfacts',
+            });
           }
         }
       }
     } catch {
-      // Timeout or network error on OFF: gracefully fallback to what we have
+      // Graceful fallback on timeout or network error: returns local results only
     }
   }
 
-  return NextResponse.json(results.slice(0, 25));
+  // 6. Validate response shape using Zod
+  const parsed = SearchResponseSchema.safeParse(rawResults.slice(0, 25));
+  if (!parsed.success) {
+    console.error('Food search response validation error:', parsed.error);
+    // Filter out any invalid items
+    const validItems = rawResults
+      .map((item) => FoodItemSchema.safeParse(item))
+      .filter((res) => res.success)
+      .map((res) => res.data);
+    return NextResponse.json(validItems);
+  }
+
+  return NextResponse.json(parsed.data);
 }
