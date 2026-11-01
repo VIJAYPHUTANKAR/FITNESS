@@ -238,3 +238,49 @@ create trigger enforce_profile_adult_age_trigger
   before insert or update of date_of_birth on public.profiles
   for each row
   execute function public.enforce_profile_adult_age();
+
+
+-- ── 009_replace_log_policies.sql ─────────────────────────────────────────────
+
+begin;
+
+-- Drop every existing policy on public.food_logs and public.exercise_logs
+do $$
+declare
+  r record;
+begin
+  for r in (
+    select schemaname, tablename, policyname
+    from pg_policies
+    where schemaname = 'public'
+      and tablename in ('food_logs', 'exercise_logs')
+  ) loop
+    execute format('drop policy if exists %I on %I.%I', r.policyname, r.schemaname, r.tablename);
+  end loop;
+end $$;
+
+-- Single unified policy for public.food_logs
+create policy "food_logs_authenticated_owner" on public.food_logs
+  for all
+  to authenticated
+  using (auth.uid() = user_id)
+  with check (
+    auth.uid() = user_id and
+    (food_id is null or exists (select 1 from public.foods f where f.id = food_id))
+  );
+
+-- Single unified policy for public.exercise_logs
+create policy "exercise_logs_authenticated_owner" on public.exercise_logs
+  for all
+  to authenticated
+  using (auth.uid() = user_id)
+  with check (
+    auth.uid() = user_id and
+    (exercise_id is null or exists (select 1 from public.exercises e where e.id = exercise_id))
+  );
+
+-- Ensure RLS is enabled on both tables
+alter table public.food_logs enable row level security;
+alter table public.exercise_logs enable row level security;
+
+commit;
