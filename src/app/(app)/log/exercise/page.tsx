@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { todayISO, formatDate, formatSupabaseError } from '@/lib/utils';
+import { todayISO, addDays, formatDate, formatSupabaseError } from '@/lib/utils';
 import { ExerciseLogFormSchema } from '@/lib/validation/schemas';
 import type { Exercise, ExerciseLog } from '@/types/database';
 import { Button } from '@/components/ui/Button';
@@ -103,9 +103,7 @@ export default function LogExercisePage() {
 
   // Date controls
   function changeDate(days: number) {
-    const current = new Date(loggedOn);
-    current.setDate(current.getDate() + days);
-    setLoggedOn(current.toISOString().split('T')[0]);
+    setLoggedOn(addDays(loggedOn, days));
   }
 
   // Selected exercise calculation: calories = MET * weight_kg * (duration_min / 60)

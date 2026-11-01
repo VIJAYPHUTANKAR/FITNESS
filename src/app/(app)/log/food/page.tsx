@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { todayISO } from '@/lib/utils';
+import { todayISO, addDays } from '@/lib/utils';
 import type { FoodLog, MealType } from '@/types/database';
 import FoodLogItem from '@/components/FoodLogItem';
 import { FoodSearch } from '@/components/FoodSearch';
@@ -62,9 +62,7 @@ export default function LogFoodPage() {
 
   // Date navigation helpers
   function changeDate(days: number) {
-    const current = new Date(loggedOn);
-    current.setDate(current.getDate() + days);
-    setLoggedOn(current.toISOString().split('T')[0]);
+    setLoggedOn(addDays(loggedOn, days));
   }
 
   // Summary calculations

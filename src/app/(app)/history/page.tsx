@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { formatDate } from '@/lib/utils';
+import { formatDate, todayISO, addDays } from '@/lib/utils';
 import type { FoodLog, ExerciseLog, WeightLog, Profile } from '@/types/database';
 import CalorieChart, { type CalorieChartDataPoint } from '@/components/CalorieChart';
 import WeightChart, { type WeightChartDataPoint } from '@/components/WeightChart';
@@ -37,10 +37,8 @@ export default function HistoryPage() {
       return;
     }
 
-    // Compute date cutoff
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - rangeDays);
-    const cutoffISO = cutoff.toISOString().split('T')[0];
+    // Compute date cutoff without UTC roundtrip
+    const cutoffISO = addDays(todayISO(), -rangeDays);
 
     // 1. Profile for goal
     const { data: p } = await supabase
@@ -87,11 +85,9 @@ export default function HistoryPage() {
   // Aggregate day-by-day dataset for CalorieChart
   const defaultGoal = profile?.daily_calorie_goal ?? 2000;
   const daysList: string[] = [];
-  const today = new Date();
+  const todayStr = todayISO();
   for (let i = rangeDays - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    daysList.push(d.toISOString().split('T')[0]);
+    daysList.push(addDays(todayStr, -i));
   }
 
   const calorieChartData: CalorieChartDataPoint[] = daysList.map((iso) => {
