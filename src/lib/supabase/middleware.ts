@@ -29,7 +29,9 @@ export async function updateSession(request: NextRequest) {
 
   // Protected routes: redirect unauthenticated users to /login
   const protectedPaths = ['/dashboard', '/log', '/burn-calculator', '/history', '/profile', '/foods', '/onboarding'];
-  const isProtected = protectedPaths.some(p => request.nextUrl.pathname.startsWith(p));
+  const isProtected = protectedPaths.some(
+    (p) => request.nextUrl.pathname === p || request.nextUrl.pathname.startsWith(`${p}/`)
+  );
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone();
