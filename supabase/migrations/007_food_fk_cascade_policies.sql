@@ -38,3 +38,4 @@ create policy "own exercise logs" on public.exercise_logs
     auth.uid() = user_id and
     (exercise_id is null or exists (select 1 from public.exercises e where e.id = exercise_id))
   );
+

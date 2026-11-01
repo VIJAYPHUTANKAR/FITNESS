@@ -82,3 +82,4 @@ describe('formatSupabaseError Sanitization (Task 7)', () => {
     expect(formatSupabaseError('')).toBe('An unexpected error occurred. Please try again.');
   });
 });
+

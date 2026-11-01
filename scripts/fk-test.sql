@@ -60,3 +60,4 @@ begin
   delete from public.food_logs where id = test_log_id;
   raise notice 'Cleaned up test food_log id: %', test_log_id;
 end $$;
+

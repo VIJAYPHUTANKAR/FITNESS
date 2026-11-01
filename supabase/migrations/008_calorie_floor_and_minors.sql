@@ -34,3 +34,4 @@ create trigger enforce_profile_adult_age_trigger
   before insert or update of date_of_birth on public.profiles
   for each row
   execute function public.enforce_profile_adult_age();
+

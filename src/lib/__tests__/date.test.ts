@@ -64,3 +64,4 @@ describe('formatDate Display', () => {
     expect(formatted).toContain('2026');
   });
 });
+
