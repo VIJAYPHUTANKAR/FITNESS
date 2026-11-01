@@ -1,8 +1,7 @@
 // src/lib/auth/__tests__/routes.test.ts
 import { isProtectedPath, isAuthPath, getSafeRedirectUrl } from '../routes';
 
-describe('isProtectedPath (Task 6 Route Auth Guard)', () => {
-  // Routes that MUST be protected
+describe('isProtectedPath (Route Auth Guard)', () => {
   test('protects core app routes and direct subpaths', () => {
     expect(isProtectedPath('/dashboard')).toBe(true);
     expect(isProtectedPath('/dashboard/x')).toBe(true);
@@ -16,18 +15,16 @@ describe('isProtectedPath (Task 6 Route Auth Guard)', () => {
     expect(isProtectedPath('/onboarding')).toBe(true);
   });
 
-  // Critical regression test: routes that MUST NOT be protected
   test('asserts /login and /signup are NOT protected, preventing redirect loops', () => {
     expect(isProtectedPath('/login')).toBe(false);
     expect(isProtectedPath('/signup')).toBe(false);
   });
 
-  // Additional public / unrelated routes
   test('asserts landing, api, and prefix-sharing paths are NOT protected', () => {
     expect(isProtectedPath('/')).toBe(false);
     expect(isProtectedPath('/logout')).toBe(false);
-    expect(isProtectedPath('/logs-anything')).toBe(false); // /logs-anything shares /log prefix but is not a subpath
-    expect(isProtectedPath('/api/foods/search')).toBe(false); // API handles its own 401 JSON auth
+    expect(isProtectedPath('/logs-anything')).toBe(false);
+    expect(isProtectedPath('/api/foods/search')).toBe(false);
   });
 
   test('asserts /log/food is protected specifically', () => {
@@ -44,22 +41,45 @@ describe('isAuthPath', () => {
   });
 });
 
-describe('getSafeRedirectUrl (Open Redirect Prevention)', () => {
-  test('allows safe relative paths', () => {
+describe('getSafeRedirectUrl (Open Redirect Hardening)', () => {
+  test('accepts safe relative paths and search params', () => {
     expect(getSafeRedirectUrl('/dashboard')).toBe('/dashboard');
-    expect(getSafeRedirectUrl('/log/food')).toBe('/log/food');
-    expect(getSafeRedirectUrl('/burn-calculator?surplus=500')).toBe('/burn-calculator?surplus=500');
+    expect(getSafeRedirectUrl('/log/food?date=2026-11-01')).toBe('/log/food?date=2026-11-01');
+    expect(getSafeRedirectUrl('/profile#danger')).toBe('/profile#danger');
   });
 
-  test('rejects protocol-relative URLs (//evil.com)', () => {
-    expect(getSafeRedirectUrl('//evil.com')).toBe('/dashboard');
-    expect(getSafeRedirectUrl('//evil.com/phish')).toBe('/dashboard');
+  test('rejects backslash injection: /\\evil.example', () => {
+    expect(getSafeRedirectUrl('/\\evil.example')).toBe('/dashboard');
   });
 
-  test('rejects absolute URLs with protocol (https://evil.com)', () => {
-    expect(getSafeRedirectUrl('https://evil.com')).toBe('/dashboard');
-    expect(getSafeRedirectUrl('http://attacker.com/login')).toBe('/dashboard');
+  test('rejects encoded backslash injection: /%5c%5cevil.example', () => {
+    expect(getSafeRedirectUrl('/%5c%5cevil.example')).toBe('/dashboard');
+    expect(getSafeRedirectUrl('/%5Cevil.example')).toBe('/dashboard');
+  });
+
+  test('rejects protocol-relative URLs: //evil.example', () => {
+    expect(getSafeRedirectUrl('//evil.example')).toBe('/dashboard');
+    expect(getSafeRedirectUrl('//evil.example/path')).toBe('/dashboard');
+  });
+
+  test('rejects external scheme URLs without leading slash: https:evil.example', () => {
+    expect(getSafeRedirectUrl('https:evil.example')).toBe('/dashboard');
+    expect(getSafeRedirectUrl('https://evil.example')).toBe('/dashboard');
+  });
+
+  test('rejects javascript: URLs: javascript:alert(1)', () => {
     expect(getSafeRedirectUrl('javascript:alert(1)')).toBe('/dashboard');
+  });
+
+  test('rejects encoded control characters: /%09/evil.example', () => {
+    expect(getSafeRedirectUrl('/%09/evil.example')).toBe('/dashboard');
+    expect(getSafeRedirectUrl('/\x00/evil.example')).toBe('/dashboard');
+    expect(getSafeRedirectUrl('/\x1f/evil.example')).toBe('/dashboard');
+  });
+
+  test('rejects encoded slashes (%2f / %2F)', () => {
+    expect(getSafeRedirectUrl('/dashboard%2fevil')).toBe('/dashboard');
+    expect(getSafeRedirectUrl('/%2F%2Fevil.com')).toBe('/dashboard');
   });
 
   test('returns fallback for null, undefined, or empty targets', () => {
