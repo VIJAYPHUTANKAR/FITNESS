@@ -182,7 +182,7 @@ export function SignupScreen() {
           </p>
         </div>
 
-        <p className="text-center text-[11px] text-[var(--color-neel-muted)]/70">
+        <p className="text-center text-xs text-[var(--color-neel-muted)]">
           Estimated values only · Not medical advice
         </p>
       </div>
@@ -190,7 +190,7 @@ export function SignupScreen() {
       {/* Quiet side panel */}
       <div className="hidden lg:flex flex-col justify-between p-12 bg-[var(--color-plate)] border-l border-[var(--color-border)]">
         <div className="space-y-4 max-w-md my-auto">
-          <span className="text-[11px] font-bold tracking-wider text-[var(--color-haldi)] uppercase">
+          <span className="text-[11px] font-bold tracking-wider text-[#8A5200] dark:text-[var(--color-haldi)] uppercase">
             Private & independent
           </span>
           <h2 className="font-heading text-3xl font-extrabold text-[var(--color-neel)] leading-tight">

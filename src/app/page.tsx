@@ -140,7 +140,7 @@ export default function LandingPage() {
         <p className="text-xs text-[var(--color-neel-muted)] max-w-2xl mx-auto leading-relaxed">
           Estimated values only. Not medical advice. Consult a qualified healthcare professional before making dietary or exercise changes.
         </p>
-        <p className="text-[11px] text-[var(--color-neel-muted)]/70">
+        <p className="text-xs text-[var(--color-neel-muted)]">
           © {new Date().getFullYear()} FitCalc. All rights reserved.
         </p>
       </footer>
