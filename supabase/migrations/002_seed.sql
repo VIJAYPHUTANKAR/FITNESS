@@ -93,3 +93,4 @@ insert into foods (user_id, name, brand, serving_desc, serving_grams,
   (null, 'Burger (veg)',                  null, '1 piece (150g)',100, 230, 6.0, 30.0, 9.0, 2.5, 'custom'),
   (null, 'Fried Rice (veg)',             null, '1 cup (200g)',  100, 163, 3.0, 30.0, 3.8, 1.5, 'custom')
 on conflict do nothing;
+

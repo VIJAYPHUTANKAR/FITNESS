@@ -43,3 +43,4 @@ export function scaleMacros(food: {
     fat_g:     (food.fat_g     ?? 0)  * factor,
   };
 }
+

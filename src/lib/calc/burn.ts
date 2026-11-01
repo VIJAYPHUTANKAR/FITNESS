@@ -79,3 +79,4 @@ export function suggestDays(
   const totalMinutes = (caloriesKcal / (refMET * weightKg)) * 60;
   return Math.max(1, Math.ceil(totalMinutes / MAX_REALISTIC_MINUTES_PER_DAY));
 }
+

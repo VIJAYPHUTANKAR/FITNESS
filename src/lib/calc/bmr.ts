@@ -73,3 +73,4 @@ export function calculateSurplus(caloriesIn: number, goal: number): number {
 export function surplusToFatKg(surplusKcal: number): number {
   return surplusKcal / 7700;
 }
+
