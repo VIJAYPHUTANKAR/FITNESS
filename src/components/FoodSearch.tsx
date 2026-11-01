@@ -174,6 +174,19 @@ export function FoodSearch({ mealType, loggedOn, onSuccess, onClose }: FoodSearc
               {selectedFood.brand && (
                 <p className="text-xs text-gray-500">{selectedFood.brand}</p>
               )}
+              {selectedFood.source === 'openfoodfacts' && (
+                <p className="text-[10px] text-gray-500 mt-0.5">
+                  Source:{' '}
+                  <a
+                    href="https://world.openfoodfacts.org"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-emerald-700 underline"
+                  >
+                    Open Food Facts (ODbL)
+                  </a>
+                </p>
+              )}
             </div>
             <button
               onClick={() => setSelectedFood(null)}
@@ -249,6 +262,20 @@ export function FoodSearch({ mealType, loggedOn, onSuccess, onClose }: FoodSearc
                 <span className="text-xs text-gray-500">
                   {food.serving_desc} • P:{food.protein_g}g C:{food.carbs_g}g F:{food.fat_g}g
                 </span>
+                {food.source === 'openfoodfacts' && (
+                  <span className="block text-[10px] text-gray-400 mt-0.5">
+                    Source:{' '}
+                    <a
+                      href="https://world.openfoodfacts.org"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-emerald-600 hover:underline"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Open Food Facts (ODbL)
+                    </a>
+                  </span>
+                )}
               </div>
               <div className="shrink-0 text-right">
                 <span className="font-semibold text-emerald-600 text-xs">

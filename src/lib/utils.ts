@@ -6,7 +6,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export { formatLocalDate, todayISO, addDays, formatDate } from './date';
+import { formatLocalDate, todayISO, addDays, formatDate } from './date';
+export { formatLocalDate, todayISO, addDays, formatDate };
 
 export function toISODate(date: Date): string {
   return formatLocalDate(date);

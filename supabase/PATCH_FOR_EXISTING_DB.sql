@@ -1,11 +1,13 @@
 -- ============================================================================
--- FitCalc: PATCH FOR EXISTING DATABASE (Migrations 005 & 006)
+-- FitCalc: PATCH FOR EXISTING DATABASE (Migrations 005, 006, 007, 008)
 -- ============================================================================
 -- WHEN TO USE THIS FILE:
 -- Use this script in the Supabase SQL Editor IF you have already executed migrations
 -- 001 through 004 on your database. It applies:
 -- - 005_delete_account.sql: Secure self-serve account deletion RPC
 -- - 006_idempotency.sql: Duplicate cleaning, unique indexes, and guarded constraints
+-- - 007_food_fk_cascade_policies.sql: ON DELETE SET NULL FKs and cross-tenant food log checks
+-- - 008_calorie_floor_and_minors.sql: Calorie goal floor and minor age checks
 -- ============================================================================
 
 -- ── 005_delete_account.sql ───────────────────────────────────────────────────
@@ -165,3 +167,74 @@ begin
       check (days >= 1 and days <= 90);
   end if;
 end $$;
+
+-- ── 007_food_fk_cascade_policies.sql ─────────────────────────────────────────
+
+-- 1. Alter food_logs.food_id FK to ON DELETE SET NULL
+alter table if exists public.food_logs
+  drop constraint if exists food_logs_food_id_fkey;
+
+alter table public.food_logs
+  add constraint food_logs_food_id_fkey
+  foreign key (food_id) references public.foods(id) on delete set null;
+
+-- 2. Alter exercise_logs.exercise_id FK to ON DELETE SET NULL
+alter table if exists public.exercise_logs
+  drop constraint if exists exercise_logs_exercise_id_fkey;
+
+alter table public.exercise_logs
+  add constraint exercise_logs_exercise_id_fkey
+  foreign key (exercise_id) references public.exercises(id) on delete set null;
+
+-- 3. Update food_logs RLS policy to enforce referenced foods exist and are visible
+drop policy if exists "own food logs" on public.food_logs;
+create policy "own food logs" on public.food_logs
+  for all
+  using (auth.uid() = user_id)
+  with check (
+    auth.uid() = user_id and
+    (food_id is null or exists (select 1 from public.foods f where f.id = food_id))
+  );
+
+-- 4. Update exercise_logs RLS policy similarly
+drop policy if exists "own exercise logs" on public.exercise_logs;
+create policy "own exercise logs" on public.exercise_logs
+  for all
+  using (auth.uid() = user_id)
+  with check (
+    auth.uid() = user_id and
+    (exercise_id is null or exists (select 1 from public.exercises e where e.id = exercise_id))
+  );
+
+-- ── 008_calorie_floor_and_minors.sql ─────────────────────────────────────────
+
+-- 1. Check constraint on daily_calorie_goal floor (1200 female / 1500 male and other)
+alter table if exists public.profiles
+  drop constraint if exists check_calorie_goal_floor;
+
+alter table public.profiles
+  add constraint check_calorie_goal_floor check (
+    daily_calorie_goal is null or (
+      case
+        when gender = 'female' then daily_calorie_goal >= 1200
+        else daily_calorie_goal >= 1500
+      end
+    )
+  );
+
+-- 2. Trigger function to enforce age >= 18 on date_of_birth
+create or replace function public.enforce_profile_adult_age()
+returns trigger language plpgsql as $$
+begin
+  if new.date_of_birth is not null and new.date_of_birth > (current_date - interval '18 years') then
+    raise exception 'FitCalc is designed for adults (18+) only. Date of birth must reflect age 18 or older.';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists enforce_profile_adult_age_trigger on public.profiles;
+create trigger enforce_profile_adult_age_trigger
+  before insert or update of date_of_birth on public.profiles
+  for each row
+  execute function public.enforce_profile_adult_age();

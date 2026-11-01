@@ -2,21 +2,47 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 
-// ── Rate limiter (Development / local debounce) ─────────────────────────────
-// NOTE: In-memory rate limiting operates per-instance in serverless environments
-// and is intended as a baseline debounce guard. Production abuse prevention is
-// enforced via mandatory Supabase user authentication below (401 for unauthenticated).
+// ── Rate limiter (In-memory per-instance fallback guard) ─────────────────────
+// ARCHITECTURAL NOTE ON SERVERLESS RATE LIMITING:
+// In serverless deployment environments (e.g., Vercel, AWS Lambda, Cloudflare Workers),
+// memory is isolated per runtime instance/container and does not persist across cold starts.
+// Therefore, this in-memory Map provides per-container debounce protection only.
+// For robust, distributed rate limiting across all instances in production, a centralized
+// key-value store (such as Upstash Redis with @upstash/ratelimit) should be used.
+// The primary defense against unauthenticated spam/scraping is Step 1 below (mandatory
+// Supabase JWT authentication returning 401).
 interface RateLimitTracker {
   count: number;
   resetAt: number;
 }
 
+const MAX_RATE_LIMIT_ENTRIES = 1000;
 const rateLimitMap = new Map<string, RateLimitTracker>();
+
+function evictExpiredEntries(now: number) {
+  for (const [key, tracker] of rateLimitMap.entries()) {
+    if (now > tracker.resetAt) {
+      rateLimitMap.delete(key);
+    }
+  }
+}
 
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
   const windowMs = 60 * 1000; // 1 minute
   const maxRequests = 40;
+
+  // Periodically evict expired entries when approaching capacity
+  if (rateLimitMap.size >= MAX_RATE_LIMIT_ENTRIES) {
+    evictExpiredEntries(now);
+    // If still at or above capacity after eviction, evict oldest entries
+    if (rateLimitMap.size >= MAX_RATE_LIMIT_ENTRIES) {
+      const oldestKey = rateLimitMap.keys().next().value;
+      if (oldestKey) {
+        rateLimitMap.delete(oldestKey);
+      }
+    }
+  }
 
   const current = rateLimitMap.get(ip);
   if (!current || now > current.resetAt) {

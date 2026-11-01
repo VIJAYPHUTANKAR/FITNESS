@@ -1,10 +1,15 @@
 -- ============================================================================
--- FitCalc: ALL MIGRATIONS COMBINED (IDEMPOTENT & RE-RUNNABLE)
+-- PROMINENT NOTICE: FOR BOOTSTRAPPING A BRAND-NEW, EMPTY DATABASE ONLY
 -- ============================================================================
--- WHEN TO USE THIS FILE:
--- Use this script in the Supabase SQL Editor if you are setting up a NEW database
--- or want to run all migrations (001 through 006) safely in a single batch.
--- If you ALREADY ran 001-004 earlier, use `supabase/PATCH_FOR_EXISTING_DB.sql` instead.
+-- DO NOT RUN THIS SCRIPT ON AN EXISTING DATABASE THAT ALREADY CONTAINS TABLES OR DATA.
+-- This combined file is intended ONLY for bootstrapping a brand-new, EMPTY database from scratch.
+-- Existing databases that have already applied prior migrations must NOT rerun this file;
+-- instead, apply ONLY the incremental migration scripts in sequence:
+--   - supabase/migrations/005_delete_account.sql
+--   - supabase/migrations/006_idempotency.sql
+--   - supabase/migrations/007_food_fk_cascade_policies.sql
+--   - supabase/migrations/008_calorie_floor_and_minors.sql
+-- (or supabase/PATCH_FOR_EXISTING_DB.sql).
 -- ============================================================================
 
 -- ── 1. TABLES & EXTENSIONS ───────────────────────────────────────────────────
