@@ -40,22 +40,22 @@ export function HistoryScreen() {
       {/* Header and Filter */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">History & Analytics</h1>
-          <p className="text-xs text-gray-500 mt-1">
+          <h1 className="text-2xl font-heading font-bold text-ink">History & Analytics</h1>
+          <p className="text-xs text-ink/60 mt-1">
             Review past intake trends, expenditure, and weight progression.
           </p>
         </div>
 
         {/* Range Selector */}
-        <div className="flex items-center gap-1.5 p-1 bg-white border border-gray-200 rounded-2xl shadow-2xs">
+        <div className="flex items-center gap-1 p-1 bg-plate border border-steel-200 rounded-xl shadow-2xs">
           {([7, 14, 30] as DateRange[]).map((r) => (
             <button
               key={r}
               onClick={() => setRangeDays(r)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-xl transition-all ${
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
                 rangeDays === r
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  ? 'bg-neel-700 text-white shadow-xs'
+                  : 'text-ink/70 hover:text-ink hover:bg-steel-100'
               }`}
             >
               Last {r} days
@@ -66,7 +66,7 @@ export function HistoryScreen() {
 
       {loading ? (
         <div className="flex justify-center py-20">
-          <Loader2 className="h-8 w-8 text-emerald-600 animate-spin" />
+          <Loader2 className="h-8 w-8 text-haldi-600 animate-spin" />
         </div>
       ) : (
         <>
@@ -81,13 +81,13 @@ export function HistoryScreen() {
           />
 
           {/* Calorie Trend Chart */}
-          <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm space-y-4">
+          <div className="bg-plate rounded-2xl border border-steel-200/80 p-6 shadow-xs space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-base font-bold text-gray-900">Daily Intake vs Goal</h2>
-                <p className="text-xs text-gray-500">Daily food intake (green) vs target goal (orange) vs burn (red)</p>
+                <h2 className="text-base font-heading font-semibold text-ink">Daily Intake vs Goal</h2>
+                <p className="text-xs text-ink/60">Daily food intake (curry leaf) vs target goal (turmeric) vs burn (beetroot)</p>
               </div>
-              <span className="text-xs text-gray-400 italic">*estimated</span>
+              <span className="text-xs text-ink/40 italic">*estimated</span>
             </div>
 
             <CalorieChart data={calorieChartData} />
@@ -95,32 +95,30 @@ export function HistoryScreen() {
 
           {/* Two-Column: Weight Progression & Macro Breakdown */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm space-y-4">
+            <div className="bg-plate rounded-2xl border border-steel-200/80 p-6 shadow-xs space-y-4">
               <div>
-                <h2 className="text-base font-bold text-gray-900">Body Weight History</h2>
-                <p className="text-xs text-gray-500">Recorded weigh-ins and trendline</p>
+                <h2 className="text-base font-heading font-semibold text-ink">Body Weight History</h2>
+                <p className="text-xs text-ink/60">Log scale progression with regression trendline</p>
               </div>
 
-              {weightChartData.length === 0 ? (
-                <div className="text-center py-12 text-gray-400 text-xs">
-                  No weigh-ins logged in this timeframe. Log your weight on the Profile page.
-                </div>
-              ) : (
-                <WeightChart data={weightChartData} unit="kg" />
-              )}
+              <WeightChart data={weightChartData} />
             </div>
 
-            <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm space-y-4">
+            <div className="bg-plate rounded-2xl border border-steel-200/80 p-6 shadow-xs space-y-4">
               <div>
-                <h2 className="text-base font-bold text-gray-900">Macronutrient Split</h2>
-                <p className="text-xs text-gray-500">Aggregate protein, carbohydrate, and fat intake</p>
+                <h2 className="text-base font-heading font-semibold text-ink">Macronutrient Split</h2>
+                <p className="text-xs text-ink/60">Relative ratio of protein, carbohydrates, and fats</p>
               </div>
 
-              <MacroChart proteinG={totalProtein} carbsG={totalCarbs} fatG={totalFat} />
+              <MacroChart
+                proteinG={totalProtein}
+                carbsG={totalCarbs}
+                fatG={totalFat}
+              />
             </div>
           </div>
 
-          {/* Daily Logs History Breakdown */}
+          {/* Day-by-day itemized logs breakdown */}
           <DailyBreakdownAccordion
             daysList={daysList}
             foodLogs={foodLogs}

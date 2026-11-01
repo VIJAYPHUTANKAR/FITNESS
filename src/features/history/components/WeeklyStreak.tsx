@@ -19,7 +19,7 @@ export default function WeeklyStreak({ loggedDates }: WeeklyStreakProps) {
     const iso = formatLocalDate(d);
     days.push({
       iso,
-      label: d.toLocaleDateString('en-US', { weekday: 'short' }),
+      label: d.toLocaleDateString('en-US', { weekday: 'narrow' }),
       logged: loggedSet.has(iso),
     });
   }
@@ -32,35 +32,34 @@ export default function WeeklyStreak({ loggedDates }: WeeklyStreakProps) {
   }
 
   return (
-    <div className="flex flex-col items-start gap-3">
+    <div className="flex flex-col items-start gap-2">
       {/* Day circles */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-1.5 flex-wrap">
         {days.map((day) => (
           <div key={day.iso} className="flex flex-col items-center gap-1">
             <div
               title={day.iso}
-              className={`h-9 w-9 rounded-full flex items-center justify-center text-xs font-semibold transition-colors ${
+              className={`h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-semibold transition-colors ${
                 day.logged
-                  ? 'bg-green-500 text-white shadow-sm shadow-green-200'
-                  : 'bg-gray-100 text-gray-400'
+                  ? 'bg-patta-600 text-white shadow-xs'
+                  : 'bg-steel-100 text-ink/40'
               }`}
             >
               {day.logged ? '✓' : ''}
             </div>
-            <span className="text-[10px] text-gray-400">{day.label}</span>
+            <span className="text-[10px] text-ink/50">{day.label}</span>
           </div>
         ))}
       </div>
 
       {/* Streak label */}
-      <div className="flex items-center gap-2">
-        <span className="text-lg">🔥</span>
+      <div className="flex items-center gap-1.5 pt-0.5">
         {streak > 0 ? (
-          <p className="text-sm font-semibold text-gray-700">
+          <p className="text-xs font-semibold text-ink tabular-nums">
             {streak}-day streak!
           </p>
         ) : (
-          <p className="text-sm text-gray-400">No active streak — log today to start one!</p>
+          <p className="text-[11px] text-ink/40">Log today to start streak</p>
         )}
       </div>
     </div>

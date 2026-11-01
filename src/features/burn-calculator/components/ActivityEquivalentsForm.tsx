@@ -23,11 +23,11 @@ export function ActivityEquivalentsForm({
   canAutoSuggest,
 }: ActivityEquivalentsFormProps) {
   return (
-    <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm space-y-4">
+    <div className="rounded-2xl border border-steel-200/80 bg-plate p-6 shadow-xs space-y-4">
       <div className="grid gap-5 sm:grid-cols-2">
         {/* Calories input */}
         <div>
-          <label className="mb-1.5 block text-xs font-semibold text-gray-700" htmlFor="calories">
+          <label className="mb-1.5 block text-xs font-semibold text-ink/70" htmlFor="calories">
             Calories (kcal, max 2,000)
           </label>
           <input
@@ -39,13 +39,13 @@ export function ActivityEquivalentsForm({
             value={calories || ''}
             onChange={(e) => setCalories(Math.max(0, Math.min(2000, Number(e.target.value))))}
             placeholder="e.g. 500"
-            className="w-full rounded-xl border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="w-full rounded-xl border border-steel-300 bg-plate px-3.5 py-2.5 text-sm text-ink tabular-nums placeholder:text-ink/40 focus:border-haldi-500 focus:outline-none focus:ring-1 focus:ring-haldi-500"
           />
         </div>
 
         {/* Days spinner */}
         <div>
-          <label className="mb-1.5 block text-xs font-semibold text-gray-700" htmlFor="days">
+          <label className="mb-1.5 block text-xs font-semibold text-ink/70" htmlFor="days">
             Spread across N days (1 - 30)
           </label>
           <div className="flex items-center gap-2">
@@ -58,13 +58,13 @@ export function ActivityEquivalentsForm({
               onChange={(e) =>
                 setDays(Math.min(30, Math.max(1, Number(e.target.value))))
               }
-              className="w-24 rounded-xl border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="w-24 rounded-xl border border-steel-300 bg-plate px-3.5 py-2.5 text-sm text-ink tabular-nums focus:border-haldi-500 focus:outline-none focus:ring-1 focus:ring-haldi-500"
             />
             <button
               type="button"
               onClick={onAutoSuggest}
               disabled={!canAutoSuggest}
-              className="rounded-xl border border-emerald-600 px-3.5 py-2.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-xl border border-haldi-600 bg-haldi-50/50 px-3.5 py-2.5 text-xs font-semibold text-haldi-800 transition-colors hover:bg-haldi-100 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Auto-suggest Safe Pace
             </button>
@@ -73,9 +73,9 @@ export function ActivityEquivalentsForm({
       </div>
 
       {days > 1 && calories > 0 && (
-        <div className="pt-2 border-t border-gray-50 flex items-center justify-between text-xs text-gray-600 flex-wrap gap-2">
-          <p className="text-gray-500">
-            Paced at <strong className="text-gray-800">{Math.round(calories / days)} kcal/day</strong> across {days} days
+        <div className="pt-2 border-t border-steel-100 flex items-center justify-between text-xs text-ink/60 flex-wrap gap-2 tabular-nums">
+          <p>
+            Paced at <strong className="text-ink">{Math.round(calories / days)} kcal/day</strong> across {days} days
           </p>
         </div>
       )}

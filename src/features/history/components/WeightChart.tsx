@@ -16,17 +16,16 @@ export interface WeightChartDataPoint {
 }
 
 function getTrend(data: WeightChartDataPoint[]): {
-  emoji: string;
   label: string;
   color: string;
 } {
-  if (data.length < 2) return { emoji: '➡️', label: 'Not enough data', color: 'text-gray-500' };
+  if (data.length < 2) return { label: 'Not enough data', color: 'text-ink/60' };
   const first = data[0].weight;
   const last = data[data.length - 1].weight;
   const diff = last - first;
-  if (Math.abs(diff) < 0.1) return { emoji: '➡️', label: 'Stable', color: 'text-gray-500' };
-  if (diff > 0) return { emoji: '📈', label: `+${diff.toFixed(1)} kg over period`, color: 'text-red-500' };
-  return { emoji: '📉', label: `${diff.toFixed(1)} kg over period`, color: 'text-green-500' };
+  if (Math.abs(diff) < 0.1) return { label: 'Weight stable over period', color: 'text-ink/70' };
+  if (diff > 0) return { label: `+${diff.toFixed(1)} kg over period`, color: 'text-ink/80' };
+  return { label: `${diff.toFixed(1)} kg over period`, color: 'text-ink/80' };
 }
 
 /** Simple linear regression to generate trend line points */
@@ -48,15 +47,15 @@ function computeTrendLine(data: WeightChartDataPoint[]): WeightChartDataPoint[] 
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-lg text-sm">
-      <p className="font-semibold text-gray-700 mb-1">{label}</p>
+    <div className="rounded-xl border border-steel-200 bg-plate p-3 shadow-md text-xs">
+      <p className="font-semibold text-ink mb-1">{label}</p>
       {payload.map((entry: any) => (
-        <p key={entry.name} style={{ color: entry.color ?? '#6366f1' }} className="leading-5">
+        <p key={entry.name} style={{ color: entry.color ?? '#1D2147' }} className="leading-5 tabular-nums">
           {entry.name}:{' '}
           <span className="font-medium">{(entry.value as number).toFixed(1)} kg</span>
         </p>
       ))}
-      <p className="text-xs text-gray-400 mt-1 italic">*estimated</p>
+      <p className="text-[10px] text-ink/40 mt-1 italic">*estimated</p>
     </div>
   );
 }
@@ -84,24 +83,23 @@ export default function WeightChart({ data, unit = 'kg' }: WeightChartProps) {
   return (
     <div className="space-y-2">
       {/* Trend indicator */}
-      <div className={`flex items-center gap-2 text-sm font-medium ${trend.color}`}>
-        <span className="text-lg">{trend.emoji}</span>
+      <div className={`flex items-center gap-2 text-xs font-medium ${trend.color}`}>
         <span>{trend.label}</span>
-        <span className="text-xs text-gray-400 font-normal italic">*estimated</span>
+        <span className="text-[10px] text-ink/40 font-normal italic">*estimated</span>
       </div>
 
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={merged} margin={{ top: 8, right: 16, left: 0, bottom: 4 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+          <CartesianGrid strokeDasharray="3 3" stroke="#EDF0F1" />
           <XAxis
             dataKey="date"
-            tick={{ fontSize: 11, fill: '#6b7280' }}
+            tick={{ fontSize: 11, fill: '#6B7280' }}
             tickLine={false}
             axisLine={false}
           />
           <YAxis
             domain={[minW, maxW]}
-            tick={{ fontSize: 11, fill: '#6b7280' }}
+            tick={{ fontSize: 11, fill: '#6B7280' }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(v: number) => `${v}`}
@@ -110,29 +108,29 @@ export default function WeightChart({ data, unit = 'kg' }: WeightChartProps) {
               angle: -90,
               position: 'insideLeft',
               offset: 10,
-              style: { fontSize: 11, fill: '#9ca3af' },
+              style: { fontSize: 11, fill: '#9CA3AF' },
             }}
           />
           <Tooltip content={<CustomTooltip />} />
 
-          {/* Actual weight line */}
+          {/* Actual weight line — Neel */}
           <Line
             dataKey="weight"
             name="Weight"
             type="monotone"
-            stroke="#6366f1"
+            stroke="#1D2147"
             strokeWidth={2.5}
-            dot={{ r: 4, fill: '#6366f1', strokeWidth: 0 }}
+            dot={{ r: 4, fill: '#1D2147', strokeWidth: 0 }}
             activeDot={{ r: 6 }}
             connectNulls
           />
 
-          {/* Trend line */}
+          {/* Trend line — Haldi dashed */}
           <Line
             dataKey="trend"
             name="Trend"
             type="monotone"
-            stroke="#a5b4fc"
+            stroke="#F2B01E"
             strokeWidth={1.5}
             strokeDasharray="5 4"
             dot={false}

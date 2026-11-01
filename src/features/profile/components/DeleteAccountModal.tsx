@@ -32,16 +32,16 @@ export function DeleteAccountModal({
   return (
     <>
       {/* Danger Zone: Delete Account */}
-      <div className="bg-red-50/50 rounded-3xl border border-red-200 p-5 shadow-sm space-y-3">
-        <div className="flex items-center gap-2 text-red-700 font-bold text-sm">
-          <ShieldAlert className="h-5 w-5 text-red-600" />
+      <div className="bg-plate rounded-2xl border border-chukandar-200/80 p-5 shadow-xs space-y-3">
+        <div className="flex items-center gap-2 text-chukandar-700 font-semibold text-sm">
+          <ShieldAlert className="h-5 w-5 text-chukandar-600" />
           <span>Danger Zone</span>
         </div>
-        <p className="text-xs text-red-600 leading-relaxed">
+        <p className="text-xs text-ink/70 leading-relaxed">
           Permanently delete your profile and all associated food, exercise, weight logs, and saved activity plans. This action cannot be undone.
         </p>
         <Button
-          variant="danger"
+          variant="destructive"
           size="sm"
           onClick={() => setShowModal(true)}
           className="w-full"
@@ -52,15 +52,15 @@ export function DeleteAccountModal({
 
       {/* Delete Confirmation Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-red-100 space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mx-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md bg-plate rounded-2xl p-6 shadow-2xl border border-chukandar-200 space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-chukandar-100 text-chukandar-700 flex items-center justify-center mx-auto">
               <AlertTriangle className="h-6 w-6" />
             </div>
 
             <div className="text-center space-y-1">
-              <h3 className="font-bold text-gray-900 text-lg">Confirm Account Deletion</h3>
-              <p className="text-xs text-gray-500">
+              <h3 className="font-heading font-bold text-ink text-lg">Confirm Account Deletion</h3>
+              <p className="text-xs text-ink/70">
                 This will permanently delete your account and all records. Type <strong>DELETE</strong> or your email (<strong>{userEmail}</strong>) below to confirm.
               </p>
             </div>
@@ -70,12 +70,12 @@ export function DeleteAccountModal({
               value={confirmationText}
               onChange={(e) => setConfirmationText(e.target.value)}
               placeholder={`Type DELETE or ${userEmail || 'your email'}`}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-center font-bold text-sm focus:ring-2 focus:ring-red-500 focus:outline-none"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-steel-300 bg-plate text-ink text-center font-bold text-sm focus:ring-2 focus:ring-chukandar-500 focus:outline-none"
             />
 
             <div className="flex items-center gap-2 pt-2">
               <Button
-                variant="ghost"
+                variant="quiet"
                 onClick={() => {
                   setShowModal(false);
                   setConfirmationText('');
@@ -86,7 +86,7 @@ export function DeleteAccountModal({
                 Cancel
               </Button>
               <Button
-                variant="danger"
+                variant="destructive"
                 onClick={onConfirmDelete}
                 disabled={!isConfirmed || deleting}
                 className="w-1/2"

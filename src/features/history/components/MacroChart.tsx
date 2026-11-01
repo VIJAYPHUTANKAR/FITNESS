@@ -9,9 +9,9 @@ import {
 } from 'recharts';
 
 const MACRO_COLORS = {
-  Protein: '#3b82f6',   // blue
-  Carbs:   '#eab308',   // yellow
-  Fat:     '#f97316',   // orange
+  Protein: '#B1275B',   // Chukandar (beetroot)
+  Carbs:   '#F2B01E',   // Haldi (turmeric)
+  Fat:     '#327349',   // Patta (curry leaf)
 } as const;
 
 type MacroKey = keyof typeof MACRO_COLORS;
@@ -32,18 +32,16 @@ function CustomTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   const entry = payload[0].payload as MacroEntry;
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-lg text-sm">
+    <div className="rounded-xl border border-steel-200 bg-plate p-3 shadow-md text-xs">
       <p className="font-semibold" style={{ color: MACRO_COLORS[entry.name] }}>
         {entry.name}
       </p>
-      <p className="text-gray-600">{entry.value.toFixed(1)} g</p>
-      <p className="text-gray-500">{entry.kcal} kcal</p>
-      <p className="text-xs text-gray-400 mt-1 italic">*estimated</p>
+      <p className="text-ink/80 tabular-nums">{entry.value.toFixed(1)} g</p>
+      <p className="text-ink/60 tabular-nums">{entry.kcal} kcal</p>
+      <p className="text-[10px] text-ink/40 mt-1 italic">*estimated</p>
     </div>
   );
 }
-
-
 
 interface MacroChartProps {
   proteinG: number;
@@ -63,7 +61,7 @@ export default function MacroChart({ proteinG, carbsG, fatG }: MacroChartProps) 
 
   if (totalG === 0) {
     return (
-      <div className="flex items-center justify-center h-40 text-gray-400 text-sm">
+      <div className="flex items-center justify-center h-40 text-ink/40 text-sm">
         No macro data for this period
       </div>
     );
@@ -91,38 +89,35 @@ export default function MacroChart({ proteinG, carbsG, fatG }: MacroChartProps) 
             ))}
           </Pie>
           <Tooltip content={<CustomTooltip />} />
-          {/* We rely on a foreignObject trick — instead, render a plain SVG text element via the Recharts label prop on Pie. */}
         </PieChart>
       </ResponsiveContainer>
 
-      {/* Manual center label (overlaid absolutely) */}
+      {/* Manual center label */}
       <div className="relative -mt-[220px] pointer-events-none flex items-center justify-center h-[220px]">
         <div className="text-center">
-          <p className="text-xl font-bold text-gray-900">{totalKcal.toLocaleString()}</p>
-          <p className="text-xs text-gray-400 italic">kcal*</p>
+          <p className="text-xl font-heading font-bold text-ink tabular-nums">{totalKcal}</p>
+          <p className="text-[11px] text-ink/50">total kcal</p>
         </div>
       </div>
 
-      {/* Custom legend */}
-      <div className="flex justify-center gap-6 flex-wrap text-sm">
-        {data.map((entry) => {
-          const pct = totalG > 0 ? ((entry.value / totalG) * 100).toFixed(0) : '0';
+      {/* Legend */}
+      <div className="grid grid-cols-3 gap-2 text-center text-xs pt-4 border-t border-steel-100">
+        {data.map((item) => {
+          const pct = Math.round((item.kcal / totalKcal) * 100);
           return (
-            <div key={entry.name} className="flex items-center gap-1.5">
-              <span
-                className="inline-block h-3 w-3 rounded-full flex-shrink-0"
-                style={{ backgroundColor: MACRO_COLORS[entry.name] }}
-              />
-              <span className="text-gray-700 font-medium">{entry.name}</span>
-              <span className="text-gray-400">
-                {entry.value.toFixed(0)}g · {pct}%
-              </span>
+            <div key={item.name} className="space-y-0.5">
+              <div className="flex items-center justify-center gap-1.5 font-medium text-ink">
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: MACRO_COLORS[item.name] }}
+                />
+                {item.name}
+              </div>
+              <p className="text-ink/60 text-[11px] tabular-nums">{pct}% • {item.value.toFixed(0)}g</p>
             </div>
           );
         })}
       </div>
-
-      <p className="text-center text-xs text-gray-400 italic">*estimated values</p>
     </div>
   );
 }

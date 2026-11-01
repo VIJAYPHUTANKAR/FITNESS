@@ -60,7 +60,7 @@ export function ProfileScreen() {
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <Loader2 className="h-8 w-8 text-emerald-600 animate-spin" />
+        <Loader2 className="h-8 w-8 text-haldi-600 animate-spin" />
       </div>
     );
   }
@@ -69,29 +69,29 @@ export function ProfileScreen() {
     <div className="mx-auto max-w-4xl p-4 sm:p-6 lg:p-8 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Account & Profile</h1>
-          <p className="text-xs text-gray-500 mt-1">Manage physical stats, calorie goals, and account privacy.</p>
+          <h1 className="text-2xl font-heading font-bold text-ink">Account & Profile</h1>
+          <p className="text-xs text-ink/60 mt-1">Manage physical stats, calorie goals, and account privacy.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={handleExportData} disabled={exporting}>
+          <Button variant="quiet" size="sm" onClick={handleExportData} disabled={exporting}>
             <Download className="h-4 w-4 mr-1.5" /> {exporting ? 'Exporting...' : 'Export Data (CSV)'}
           </Button>
-          <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-red-600 hover:bg-red-50">
+          <Button variant="quiet" size="sm" onClick={handleSignOut} className="text-chukandar-600 hover:bg-chukandar-50">
             <LogOut className="h-4 w-4 mr-1.5" /> Sign Out
           </Button>
         </div>
       </div>
 
       {successMsg && (
-        <div className="p-3 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-semibold flex items-center gap-2">
-          <Check className="h-4 w-4 shrink-0" />
+        <div className="p-3 bg-patta-50 text-patta-800 border border-patta-200 rounded-xl text-xs font-semibold flex items-center gap-2">
+          <Check className="h-4 w-4 shrink-0 text-patta-600" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {errorMsg && (
-        <div className="p-3 bg-red-50 text-red-600 rounded-xl text-xs font-semibold flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 shrink-0" />
+        <div className="p-3 bg-chukandar-50 text-chukandar-700 border border-chukandar-200 rounded-xl text-xs font-semibold flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-chukandar-600" />
           <span>{errorMsg}</span>
         </div>
       )}
