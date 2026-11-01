@@ -53,6 +53,8 @@ export const ProfileFormSchema = z
     }
   );
 
+export type ProfileFormInput = z.infer<typeof ProfileFormSchema>;
+
 // ── Food Log Schema ─────────────────────────────────────────────────────────
 export const FoodLogFormSchema = z.object({
   food_id: z.number().optional().nullable(),
