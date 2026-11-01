@@ -1,6 +1,6 @@
 # Row-Level Security (RLS) Policy Audit
 
-Comprehensive audit of all tables and views in `supabase/migrations/001_initial_schema.sql` and `supabase/ALL_MIGRATIONS.sql`.
+Comprehensive audit of all tables and views in `supabase/migrations/001_initial_schema.sql`, `006_idempotency.sql`, `007_food_fk_cascade_policies.sql`, and `supabase/ALL_MIGRATIONS.sql`.
 
 ---
 
@@ -9,16 +9,30 @@ Comprehensive audit of all tables and views in `supabase/migrations/001_initial_
 | Table | RLS Enabled? | SELECT Policy (`using`) | INSERT Policy (`with check`) | UPDATE Policy (`using` & `with check`) | DELETE Policy (`using`) | Notes |
 |---|---|---|---|---|---|---|
 | **profiles** | **YES** | `auth.uid() = id` | `auth.uid() = id` | `auth.uid() = id` (both) | `auth.uid() = id` | Complete isolation. Users cannot view, modify, or delete another user's profile. |
-| **foods** | **YES** | `user_id IS NULL OR user_id = auth.uid()` | `user_id = auth.uid()` | `user_id = auth.uid()` (both) | `user_id = auth.uid()` | Global foods (`user_id IS NULL`) are readable by all authenticated users, but CANNOT be inserted, modified, or deleted by any user. Users can only write/modify their own custom foods. |
-| **food_logs** | **YES** | `auth.uid() = user_id` | `auth.uid() = user_id` | `auth.uid() = user_id` (both) | `auth.uid() = user_id` | Complete isolation. User A cannot view, insert, update, or delete User B's food logs. |
+| **foods** | **YES** | `user_id IS NULL OR user_id = auth.uid()` | `user_id = auth.uid()` | `user_id = auth.uid()` (both) | `user_id = auth.uid()` | Global foods (`user_id IS NULL`) are readable by all authenticated users, but CANNOT be inserted, modified, or deleted by any user. Users can only write/modify/delete their own custom foods. |
+| **food_logs** | **YES** | `auth.uid() = user_id` | `auth.uid() = user_id AND (food_id IS NULL OR EXISTS (SELECT 1 FROM public.foods WHERE id = food_id))` | `auth.uid() = user_id` (both with check on food_id) | `auth.uid() = user_id` | Complete isolation. Subquery on `public.foods` ensures users can only log foods they have permission to view (global or own). `food_id` FK uses `ON DELETE SET NULL` so deleting custom foods no longer blocks deletion or breaks logs. |
 | **exercises** | **YES** | `auth.role() = 'authenticated'` | *None (Read-Only)* | *None (Read-Only)* | *None (Read-Only)* | Strict read-only catalog. No write policies exist; regular users and anon are completely blocked from inserting, modifying, or deleting exercises. |
-| **exercise_logs** | **YES** | `auth.uid() = user_id` | `auth.uid() = user_id` | `auth.uid() = user_id` (both) | `auth.uid() = user_id` | Complete isolation. Both `using` and `with check` prevent cross-user ID spoofing. |
+| **exercise_logs** | **YES** | `auth.uid() = user_id` | `auth.uid() = user_id AND (exercise_id IS NULL OR EXISTS (SELECT 1 FROM public.exercises WHERE id = exercise_id))` | `auth.uid() = user_id` (both with check on exercise_id) | `auth.uid() = user_id` | Complete isolation. `exercise_id` FK uses `ON DELETE SET NULL`. Both `using` and `with check` prevent cross-user ID spoofing. |
 | **weight_logs** | **YES** | `auth.uid() = user_id` | `auth.uid() = user_id` | `auth.uid() = user_id` (both) | `auth.uid() = user_id` | Complete isolation with `UNIQUE (user_id, logged_on)`. |
 | **burn_plans** | **YES** | `auth.uid() = user_id` | `auth.uid() = user_id` | `auth.uid() = user_id` (both) | `auth.uid() = user_id` | Complete isolation for saved calculation plans. |
 
 ---
 
-## 2. Views & Stored Procedures
+## 2. Foreign Key Cascade & Referential Integrity (Migration 007)
+
+1. **`food_logs.food_id` Foreign Key**:
+   - Altered to `ON DELETE SET NULL`.
+   - When a user deletes a custom food from their custom library, existing food log entries referencing that food remain intact (with food name, calories, and macros preserved) and `food_id` safely transitions to `NULL`.
+   - The foreign key constraint no longer blocks custom food deletion.
+2. **`exercise_logs.exercise_id` Foreign Key**:
+   - Altered to `ON DELETE SET NULL`.
+3. **Cross-Tenant Food ID Isolation**:
+   - `food_logs` WITH CHECK policy validates `EXISTS (SELECT 1 FROM public.foods f WHERE f.id = food_id)`.
+   - Because `foods` table RLS restricts visibility to global items and the caller's own custom foods, attempting to log another user's custom food ID fails policy validation at the database level.
+
+---
+
+## 3. Views & Stored Procedures
 
 1. **`public.daily_summary` View**:
    - Defined with `WITH (security_invoker = true)`.

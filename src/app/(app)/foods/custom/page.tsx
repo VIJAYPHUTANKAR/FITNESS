@@ -37,6 +37,7 @@ export default function CustomFoodsPage() {
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const fetchCustomFoods = useCallback(async () => {
     setLoading(true);
@@ -122,8 +123,14 @@ export default function CustomFoodsPage() {
   }
 
   async function handleDeleteFood(id: number) {
-    await supabase.from('foods').delete().eq('id', id);
-    fetchCustomFoods();
+    setDeleteError(null);
+    const { error: delErr } = await supabase.from('foods').delete().eq('id', id);
+    if (delErr) {
+      setDeleteError(formatSupabaseError(delErr));
+      return;
+    }
+    // Confirm deletion outcome by refetching
+    await fetchCustomFoods();
   }
 
   return (
@@ -321,6 +328,13 @@ export default function CustomFoodsPage() {
       {/* Custom Foods List */}
       <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm space-y-4">
         <h2 className="font-bold text-gray-900 text-base">Your Custom Items ({foods.length})</h2>
+
+        {deleteError && (
+          <div className="p-3 text-xs bg-red-50 text-red-600 rounded-xl flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{deleteError}</span>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex justify-center py-12">
