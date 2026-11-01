@@ -37,8 +37,15 @@ yarn-error.log*
 
 # playwright & scratch
 /scratch/
+scratch
 /test-results/
+test-results
 /playwright-report/
+playwright-report
+.next
+node_modules
+coverage
+tsconfig.tsbuildinfo
 
 # vercel
 .vercel
