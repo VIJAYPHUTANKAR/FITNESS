@@ -8,34 +8,50 @@ export const GoalTypeSchema = z.enum(['lose', 'maintain', 'gain']);
 export const MealTypeSchema = z.enum(['breakfast', 'lunch', 'dinner', 'snack']);
 
 // ── Profile / Onboarding Schema ─────────────────────────────────────────────
-export const ProfileFormSchema = z.object({
-  full_name: z.string().max(100, 'Name must be 100 characters or less').optional().nullable(),
-  date_of_birth: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be in YYYY-MM-DD format')
-    .refine((val) => {
-      const d = new Date(val);
-      if (isNaN(d.getTime())) return false;
-      const today = new Date();
-      const age = today.getFullYear() - d.getFullYear();
-      return age >= 10 && age <= 120;
-    }, 'Age must be between 10 and 120 years'),
-  gender: GenderSchema,
-  height_cm: z
-    .number({ message: 'Height must be a number' })
-    .min(50, 'Height must be at least 50 cm')
-    .max(260, 'Height must be 260 cm or less'),
-  weight_kg: z
-    .number({ message: 'Weight must be a number' })
-    .min(20, 'Weight must be at least 20 kg')
-    .max(500, 'Weight must be 500 kg or less'),
-  activity_level: ActivityLevelSchema,
-  goal_type: GoalTypeSchema,
-  daily_calorie_goal: z
-    .number({ message: 'Calorie goal must be a number' })
-    .min(500, 'Calorie goal must be at least 500 kcal')
-    .max(10000, 'Calorie goal cannot exceed 10,000 kcal'),
-});
+export const ProfileFormSchema = z
+  .object({
+    full_name: z.string().max(100, 'Name must be 100 characters or less').optional().nullable(),
+    date_of_birth: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be in YYYY-MM-DD format')
+      .refine((val) => {
+        const d = new Date(val);
+        if (isNaN(d.getTime())) return false;
+        const today = new Date();
+        let age = today.getFullYear() - d.getFullYear();
+        const m = today.getMonth() - d.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < d.getDate())) {
+          age--;
+        }
+        return age >= 18 && age <= 120;
+      }, 'Users must be at least 18 years old. FitCalc is designed for adults only.'),
+    gender: GenderSchema,
+    height_cm: z
+      .number({ message: 'Height must be a number' })
+      .min(50, 'Height must be at least 50 cm')
+      .max(260, 'Height must be 260 cm or less'),
+    weight_kg: z
+      .number({ message: 'Weight must be a number' })
+      .min(20, 'Weight must be at least 20 kg')
+      .max(500, 'Weight must be 500 kg or less'),
+    activity_level: ActivityLevelSchema,
+    goal_type: GoalTypeSchema,
+    daily_calorie_goal: z
+      .number({ message: 'Calorie goal must be a number' })
+      .min(1200, 'Calorie goal must be at least 1,200 kcal')
+      .max(10000, 'Calorie goal cannot exceed 10,000 kcal'),
+  })
+  .refine(
+    (data) => {
+      const floor = data.gender === 'female' ? 1200 : 1500;
+      return data.daily_calorie_goal >= floor;
+    },
+    {
+      message:
+        'Daily calorie goal cannot be below 1,200 kcal for females or 1,500 kcal for males and other',
+      path: ['daily_calorie_goal'],
+    }
+  );
 
 // ── Food Log Schema ─────────────────────────────────────────────────────────
 export const FoodLogFormSchema = z.object({

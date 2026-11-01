@@ -48,21 +48,34 @@ export default function OnboardingPage() {
 
   // Math
   const age = ageFromDOB(new Date(dob));
-  const bmr = Math.round(calculateBMR(weightKg, heightCm, Math.max(10, age || 25), gender));
-  const tdee = Math.round(calculateTDEE(bmr, activityLevel));
-  const recommendedGoal = calculateCalorieGoal(tdee, goalType, gender);
+  const isMinor = age < 18;
+  const bmr = isMinor ? 0 : Math.round(calculateBMR(weightKg, heightCm, Math.max(10, age || 25), gender));
+  const tdee = isMinor ? 0 : Math.round(calculateTDEE(bmr, activityLevel));
+  const recommendedGoal = isMinor ? 0 : calculateCalorieGoal(tdee, goalType, gender);
   const floor = getCalorieGoalFloor(gender);
 
-  const [calorieGoal, setCalorieGoal] = useState<number>(recommendedGoal);
-  const isBelowFloor = calorieGoal < floor;
+  const [calorieGoal, setCalorieGoal] = useState<number>(recommendedGoal || 2000);
+  const isBelowFloor = !isMinor && calorieGoal < floor;
 
   function handleGoalTypeChange(newGoal: GoalType) {
     setGoalType(newGoal);
-    const updated = calculateCalorieGoal(tdee, newGoal, gender);
-    setCalorieGoal(updated);
+    if (!isMinor) {
+      const updated = calculateCalorieGoal(tdee, newGoal, gender);
+      setCalorieGoal(updated);
+    }
   }
 
   async function handleFinish() {
+    if (isMinor) {
+      setError('FitCalc is designed for adults (18+). Calorie deficits and restriction are not recommended for minors without parental and medical supervision.');
+      return;
+    }
+
+    if (isBelowFloor) {
+      setError(`Daily calorie goal cannot be below the safety floor of ${floor} kcal for ${gender === 'female' ? 'women' : 'men'}.`);
+      return;
+    }
+
     setSaving(true);
     setError(null);
 
@@ -189,6 +202,17 @@ export default function OnboardingPage() {
                 className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
               <p className="text-[11px] text-gray-400 mt-1">Age: {age} years</p>
+              {isMinor && (
+                <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 space-y-1">
+                  <p className="font-semibold flex items-center gap-1.5 text-amber-800">
+                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
+                    Designed for Adults (18+)
+                  </p>
+                  <p>
+                    FitCalc is designed for adults (18+). Calorie goals, restriction, and deficit targets can impact physical growth and development. If you are under 18, please consult a pediatrician or doctor with a parent or guardian.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div>
@@ -214,7 +238,7 @@ export default function OnboardingPage() {
             </div>
 
             <div className="pt-4 flex justify-end">
-              <Button onClick={() => setStep(2)}>
+              <Button onClick={() => setStep(2)} disabled={isMinor}>
                 Next: Body Stats <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
@@ -358,7 +382,7 @@ export default function OnboardingPage() {
               </label>
               <input
                 type="number"
-                min="500"
+                min={floor}
                 max="10000"
                 value={calorieGoal}
                 onChange={(e) => setCalorieGoal(Number(e.target.value))}
@@ -370,7 +394,7 @@ export default function OnboardingPage() {
                 <div className="mt-2 p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2">
                   <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
                   <span>
-                    <strong>Below safety floor ({floor} kcal)!</strong> Guidelines recommend a minimum intake of {floor} kcal for {gender === 'female' ? 'women' : 'men'} to avoid nutrient deficiencies and metabolic slow-down.
+                    <strong>Below safety floor ({floor} kcal)!</strong> Guidelines require a minimum intake of {floor} kcal for {gender === 'female' ? 'women' : 'men'}. Targets below this floor cannot be saved.
                   </span>
                 </div>
               )}
@@ -387,7 +411,7 @@ export default function OnboardingPage() {
               <Button variant="ghost" onClick={() => setStep(2)} disabled={saving}>
                 <ChevronLeft className="h-4 w-4 mr-1" /> Back
               </Button>
-              <Button onClick={handleFinish} disabled={saving} className="px-6">
+              <Button onClick={handleFinish} disabled={saving || isBelowFloor || isMinor} className="px-6">
                 {saving ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> Saving...

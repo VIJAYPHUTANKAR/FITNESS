@@ -104,6 +104,12 @@ export default function ProfilePage() {
     setSuccessMsg(null);
     setErrorMsg(null);
 
+    if (isBelowFloor) {
+      setErrorMsg(`Daily calorie goal cannot be below the safety floor of ${floor} kcal for ${gender === 'female' ? 'women' : 'men'}.`);
+      setSaving(false);
+      return;
+    }
+
     // Zod validation
     const validation = ProfileFormSchema.safeParse({
       full_name: fullName.trim() || null,
@@ -481,10 +487,10 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-[11px] text-gray-500 mb-1">Custom Daily Target (kcal)</label>
+                <label className="block text-[11px] text-gray-500 mb-1">Custom Daily Target (kcal, min {floor})</label>
                 <input
                   type="number"
-                  min="500"
+                  min={floor}
                   max="10000"
                   value={calorieGoal}
                   onChange={(e) => setCalorieGoal(Number(e.target.value))}
@@ -497,13 +503,13 @@ export default function ProfilePage() {
                 <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2">
                   <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
                   <span>
-                    <strong>Below safety floor ({floor} kcal)!</strong> Nutritional guidelines advise against targets below {floor} kcal for {gender === 'female' ? 'women' : 'men'} without clinical supervision to protect metabolic rate and nutrient adequacy.
+                    <strong>Below safety floor ({floor} kcal)!</strong> Nutritional guidelines require targets of at least {floor} kcal for {gender === 'female' ? 'women' : 'men'}. Goals below this floor cannot be saved.
                   </span>
                 </div>
               )}
             </div>
 
-            <Button type="submit" disabled={saving} className="w-full">
+            <Button type="submit" disabled={saving || isBelowFloor} className="w-full">
               {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Check className="h-4 w-4 mr-1" />}
               Save Profile Changes
             </Button>
