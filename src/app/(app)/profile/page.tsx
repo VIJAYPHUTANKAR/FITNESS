@@ -54,6 +54,7 @@ export default function ProfilePage() {
   const [savingWeight, setSavingWeight] = useState(false);
 
   // Export & Delete state
+  const [userEmail, setUserEmail] = useState('');
   const [exporting, setExporting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
@@ -64,6 +65,7 @@ export default function ProfilePage() {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      if (user.email) setUserEmail(user.email);
 
       const { data } = await supabase
         .from('profiles')
@@ -229,24 +231,25 @@ export default function ProfilePage() {
     setExporting(false);
   }
 
+  const isDeleteConfirmed =
+    deleteConfirmationText.trim() === 'DELETE' ||
+    (Boolean(userEmail) && deleteConfirmationText.trim().toLowerCase() === userEmail.toLowerCase());
+
   async function handleDeleteAccount() {
-    if (deleteConfirmationText !== 'DELETE') return;
+    if (!isDeleteConfirmed) return;
     setDeletingAccount(true);
+    setErrorMsg(null);
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    const { error } = await supabase.rpc('delete_my_account');
+    if (error) {
+      setErrorMsg(formatSupabaseError(error));
+      setDeletingAccount(false);
+      setShowDeleteModal(false);
+      return;
+    }
 
-    // Remove all user rows across all tables before signing out
-    await Promise.all([
-      supabase.from('food_logs').delete().eq('user_id', user.id),
-      supabase.from('exercise_logs').delete().eq('user_id', user.id),
-      supabase.from('weight_logs').delete().eq('user_id', user.id),
-      supabase.from('burn_plans').delete().eq('user_id', user.id),
-      supabase.from('foods').delete().eq('user_id', user.id),
-    ]);
-    await supabase.from('profiles').delete().eq('id', user.id);
     await supabase.auth.signOut();
-    router.push('/login');
+    router.push('/');
     router.refresh();
   }
 
@@ -529,7 +532,7 @@ export default function ProfilePage() {
             <div className="text-center space-y-1">
               <h3 className="font-bold text-gray-900 text-lg">Confirm Account Deletion</h3>
               <p className="text-xs text-gray-500">
-                This will permanently remove all your data from our servers. Type <strong>DELETE</strong> below to confirm.
+                This will permanently delete your account and all records. Type <strong>DELETE</strong> or your email (<strong>{userEmail}</strong>) below to confirm.
               </p>
             </div>
 
@@ -537,7 +540,7 @@ export default function ProfilePage() {
               type="text"
               value={deleteConfirmationText}
               onChange={(e) => setDeleteConfirmationText(e.target.value)}
-              placeholder="Type DELETE"
+              placeholder={`Type DELETE or ${userEmail || 'your email'}`}
               className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-center font-bold text-sm focus:ring-2 focus:ring-red-500 focus:outline-none"
             />
 
@@ -556,7 +559,7 @@ export default function ProfilePage() {
               <Button
                 variant="danger"
                 onClick={handleDeleteAccount}
-                disabled={deleteConfirmationText !== 'DELETE' || deletingAccount}
+                disabled={!isDeleteConfirmed || deletingAccount}
                 className="w-1/2"
               >
                 {deletingAccount ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
