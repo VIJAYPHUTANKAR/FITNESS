@@ -1,14 +1,15 @@
 -- ============================================================================
--- FitCalc: ALL MIGRATIONS COMBINED (IDEMPOTENT)
--- Order: 001_initial_schema -> 002_seed -> 003_views -> 004_check_constraints
--- Paste into Supabase SQL Editor and execute in a single run.
+-- FitCalc: ALL MIGRATIONS COMBINED (IDEMPOTENT & RE-RUNNABLE)
+-- ============================================================================
+-- WHEN TO USE THIS FILE:
+-- Use this script in the Supabase SQL Editor if you are setting up a NEW database
+-- or want to run all migrations (001 through 006) safely in a single batch.
+-- If you ALREADY ran 001-004 earlier, use `supabase/PATCH_FOR_EXISTING_DB.sql` instead.
 -- ============================================================================
 
--- ============================================================================
--- 1. TABLES & EXTENSIONS
--- ============================================================================
+-- ── 1. TABLES & EXTENSIONS ───────────────────────────────────────────────────
 
--- ── Profiles ────────────────────────────────────────────────────────────────
+-- Profiles
 create table if not exists public.profiles (
   id                  uuid primary key references auth.users(id) on delete cascade,
   full_name           text,
@@ -23,7 +24,7 @@ create table if not exists public.profiles (
   created_at          timestamptz default now()
 );
 
--- ── Foods catalog ───────────────────────────────────────────────────────────
+-- Foods catalog
 create table if not exists public.foods (
   id                  bigint generated always as identity primary key,
   user_id             uuid references auth.users(id) on delete cascade,
@@ -42,34 +43,41 @@ create table if not exists public.foods (
 );
 create index if not exists foods_name_fts on public.foods using gin (to_tsvector('simple', name));
 
--- ── Food log entries ────────────────────────────────────────────────────────
+-- Partial unique index on global foods to ensure zero duplicate global entries
+create unique index if not exists foods_global_name_uniq
+  on public.foods (lower(name))
+  where user_id is null;
+
+-- Food log entries
 create table if not exists public.food_logs (
   id              bigint generated always as identity primary key,
   user_id         uuid not null references auth.users(id) on delete cascade,
   food_id         bigint references public.foods(id),
   food_name       text not null,
   logged_on       date not null default current_date,
-  meal_type       text check (meal_type in ('breakfast','lunch','dinner','snack')),
-  quantity_grams  numeric(8,2) not null,
-  calories        numeric(8,2) not null,
-  protein_g       numeric(7,2),
-  carbs_g         numeric(7,2),
-  fat_g           numeric(7,2),
+  meal_type       text not null check (meal_type in ('breakfast','lunch','dinner','snack')),
+  quantity_grams  numeric(7,2) not null,
+  calories        numeric(7,2) not null,
+  protein_g       numeric(6,2),
+  carbs_g         numeric(6,2),
+  fat_g           numeric(6,2),
   created_at      timestamptz default now()
 );
 create index if not exists food_logs_user_date on public.food_logs (user_id, logged_on);
 
--- ── Exercises catalog (global) ──────────────────────────────────────────────
+-- Exercises catalog
 create table if not exists public.exercises (
   id                bigint generated always as identity primary key,
   name              text not null unique,
-  category          text,
+  category          text not null check (category in
+    ('cardio','strength','flexibility','sports','other')),
   met               numeric(4,1) not null,
-  intensity         text,
-  equipment_needed  boolean default false
+  intensity         text not null check (intensity in ('low','moderate','high')),
+  equipment_needed  boolean not null default false,
+  created_at        timestamptz default now()
 );
 
--- ── Exercise log ────────────────────────────────────────────────────────────
+-- Exercise log entries
 create table if not exists public.exercise_logs (
   id              bigint generated always as identity primary key,
   user_id         uuid not null references auth.users(id) on delete cascade,
@@ -77,21 +85,23 @@ create table if not exists public.exercise_logs (
   exercise_name   text not null,
   logged_on       date not null default current_date,
   duration_min    numeric(6,1) not null,
-  calories_burned numeric(8,2) not null,
+  calories_burned numeric(7,1) not null,
   created_at      timestamptz default now()
 );
 create index if not exists exercise_logs_user_date on public.exercise_logs (user_id, logged_on);
 
--- ── Weight history ──────────────────────────────────────────────────────────
+-- Weight log entries
 create table if not exists public.weight_logs (
   id          bigint generated always as identity primary key,
   user_id     uuid not null references auth.users(id) on delete cascade,
   logged_on   date not null default current_date,
   weight_kg   numeric(5,1) not null,
+  created_at  timestamptz default now(),
   unique (user_id, logged_on)
 );
+create index if not exists weight_logs_user_date on public.weight_logs (user_id, logged_on);
 
--- ── Burn plans ──────────────────────────────────────────────────────────────
+-- Burn plans
 create table if not exists public.burn_plans (
   id                bigint generated always as identity primary key,
   user_id           uuid not null references auth.users(id) on delete cascade,
@@ -100,64 +110,133 @@ create table if not exists public.burn_plans (
   plan              jsonb not null,
   created_at        timestamptz default now()
 );
+create index if not exists burn_plans_user_date on public.burn_plans (user_id, created_at desc);
 
--- ============================================================================
--- 2. ROW LEVEL SECURITY (RLS) POLICIES
--- ============================================================================
+-- ── 2. ROW-LEVEL SECURITY & POLICIES ─────────────────────────────────────────
 
-alter table public.profiles      enable row level security;
-alter table public.food_logs     enable row level security;
+alter table public.profiles enable row level security;
+alter table public.foods enable row level security;
+alter table public.food_logs enable row level security;
+alter table public.exercises enable row level security;
 alter table public.exercise_logs enable row level security;
-alter table public.weight_logs   enable row level security;
-alter table public.burn_plans    enable row level security;
-alter table public.foods         enable row level security;
-alter table public.exercises     enable row level security;
+alter table public.weight_logs enable row level security;
+alter table public.burn_plans enable row level security;
 
--- profiles
-drop policy if exists "own profile" on public.profiles;
-create policy "own profile" on public.profiles
-  for all using (auth.uid() = id) with check (auth.uid() = id);
+-- Profiles policies
+drop policy if exists "Users view own profile" on public.profiles;
+create policy "Users view own profile" on public.profiles
+  for select using (auth.uid() = id);
 
--- food_logs
-drop policy if exists "own food logs" on public.food_logs;
-create policy "own food logs" on public.food_logs
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "Users insert own profile" on public.profiles;
+create policy "Users insert own profile" on public.profiles
+  for insert with check (auth.uid() = id);
 
--- exercise_logs
-drop policy if exists "own exercise logs" on public.exercise_logs;
-create policy "own exercise logs" on public.exercise_logs
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "Users update own profile" on public.profiles;
+create policy "Users update own profile" on public.profiles
+  for update using (auth.uid() = id) with check (auth.uid() = id);
 
--- weight_logs
-drop policy if exists "own weight logs" on public.weight_logs;
-create policy "own weight logs" on public.weight_logs
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "Users delete own profile" on public.profiles;
+create policy "Users delete own profile" on public.profiles
+  for delete using (auth.uid() = id);
 
--- burn_plans
-drop policy if exists "own burn plans" on public.burn_plans;
-create policy "own burn plans" on public.burn_plans
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-
--- foods: users can select global foods and their own foods; can insert/update/delete ONLY their own foods
-drop policy if exists "read foods" on public.foods;
-create policy "read foods" on public.foods
+-- Foods policies
+drop policy if exists "Read global foods and own custom foods" on public.foods;
+create policy "Read global foods and own custom foods" on public.foods
   for select using (user_id is null or user_id = auth.uid());
 
-drop policy if exists "manage own foods" on public.foods;
-create policy "manage own foods" on public.foods
-  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists "Insert own custom foods" on public.foods;
+create policy "Insert own custom foods" on public.foods
+  for insert with check (user_id = auth.uid());
 
--- exercises: authenticated read-only
-drop policy if exists "read exercises" on public.exercises;
-create policy "read exercises" on public.exercises
-  for select to authenticated using (true);
+drop policy if exists "Update own custom foods" on public.foods;
+create policy "Update own custom foods" on public.foods
+  for update using (user_id = auth.uid()) with check (user_id = auth.uid());
 
--- ============================================================================
--- 3. AUTOMATIC PROFILE TRIGGER ON SIGNUP
--- ============================================================================
+drop policy if exists "Delete own custom foods" on public.foods;
+create policy "Delete own custom foods" on public.foods
+  for delete using (user_id = auth.uid());
+
+-- Food logs policies
+drop policy if exists "Users read own food_logs" on public.food_logs;
+create policy "Users read own food_logs" on public.food_logs
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "Users insert own food_logs" on public.food_logs;
+create policy "Users insert own food_logs" on public.food_logs
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "Users update own food_logs" on public.food_logs;
+create policy "Users update own food_logs" on public.food_logs
+  for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop policy if exists "Users delete own food_logs" on public.food_logs;
+create policy "Users delete own food_logs" on public.food_logs
+  for delete using (auth.uid() = user_id);
+
+-- Exercises policies (Read-only for authenticated users; no write policy)
+drop policy if exists "Read exercises catalog" on public.exercises;
+create policy "Read exercises catalog" on public.exercises
+  for select using (auth.role() = 'authenticated');
+
+-- Exercise logs policies
+drop policy if exists "Users read own exercise_logs" on public.exercise_logs;
+create policy "Users read own exercise_logs" on public.exercise_logs
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "Users insert own exercise_logs" on public.exercise_logs;
+create policy "Users insert own exercise_logs" on public.exercise_logs
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "Users update own exercise_logs" on public.exercise_logs;
+create policy "Users update own exercise_logs" on public.exercise_logs
+  for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop policy if exists "Users delete own exercise_logs" on public.exercise_logs;
+create policy "Users delete own exercise_logs" on public.exercise_logs
+  for delete using (auth.uid() = user_id);
+
+-- Weight logs policies
+drop policy if exists "Users read own weight_logs" on public.weight_logs;
+create policy "Users read own weight_logs" on public.weight_logs
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "Users insert own weight_logs" on public.weight_logs;
+create policy "Users insert own weight_logs" on public.weight_logs
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "Users update own weight_logs" on public.weight_logs;
+create policy "Users update own weight_logs" on public.weight_logs
+  for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop policy if exists "Users delete own weight_logs" on public.weight_logs;
+create policy "Users delete own weight_logs" on public.weight_logs
+  for delete using (auth.uid() = user_id);
+
+-- Burn plans policies
+drop policy if exists "Users read own burn_plans" on public.burn_plans;
+create policy "Users read own burn_plans" on public.burn_plans
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "Users insert own burn_plans" on public.burn_plans;
+create policy "Users insert own burn_plans" on public.burn_plans
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "Users update own burn_plans" on public.burn_plans;
+create policy "Users update own burn_plans" on public.burn_plans
+  for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop policy if exists "Users delete own burn_plans" on public.burn_plans;
+create policy "Users delete own burn_plans" on public.burn_plans
+  for delete using (auth.uid() = user_id);
+
+-- ── 3. AUTH TRIGGER & RPC FUNCTIONS ──────────────────────────────────────────
 
 create or replace function public.handle_new_user()
-returns trigger language plpgsql security definer set search_path = public as $$
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
 begin
   insert into public.profiles (id, full_name)
   values (new.id, new.raw_user_meta_data->>'full_name')
@@ -169,11 +248,69 @@ $$;
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
-  for each row execute procedure public.handle_new_user();
+  for each row execute function public.handle_new_user();
 
--- ============================================================================
--- 4. SEED DATA (EXERCISES & FOODS)
--- ============================================================================
+-- Self-serve account deletion RPC
+create or replace function public.delete_my_account()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id uuid;
+begin
+  v_user_id := auth.uid();
+  if v_user_id is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  delete from auth.users where id = v_user_id;
+end;
+$$;
+
+revoke all on function public.delete_my_account() from public, anon;
+grant execute on function public.delete_my_account() to authenticated;
+
+-- ── 4. VIEWS ─────────────────────────────────────────────────────────────────
+
+create or replace view public.daily_summary
+with (security_invoker = true) as
+select
+  coalesce(f.user_id, e.user_id, w.user_id) as user_id,
+  coalesce(f.logged_on, e.logged_on, w.logged_on) as date,
+  coalesce(f.total_intake_kcal, 0) as total_intake_kcal,
+  coalesce(f.total_protein_g, 0) as total_protein_g,
+  coalesce(f.total_carbs_g, 0) as total_carbs_g,
+  coalesce(f.total_fat_g, 0) as total_fat_g,
+  coalesce(e.total_burned_kcal, 0) as total_burned_kcal,
+  coalesce(e.total_exercise_min, 0) as total_exercise_min,
+  w.weight_kg as recorded_weight_kg
+from (
+  select
+    user_id,
+    logged_on,
+    sum(calories) as total_intake_kcal,
+    sum(protein_g) as total_protein_g,
+    sum(carbs_g) as total_carbs_g,
+    sum(fat_g) as total_fat_g
+  from public.food_logs
+  group by user_id, logged_on
+) f
+full outer join (
+  select
+    user_id,
+    logged_on,
+    sum(calories_burned) as total_burned_kcal,
+    sum(duration_min) as total_exercise_min
+  from public.exercise_logs
+  group by user_id, logged_on
+) e on f.user_id = e.user_id and f.logged_on = e.logged_on
+full outer join public.weight_logs w
+  on coalesce(f.user_id, e.user_id) = w.user_id
+  and coalesce(f.logged_on, e.logged_on) = w.logged_on;
+
+-- ── 5. SEED DATA (EXERCISES & GLOBAL FOODS) ──────────────────────────────────
 
 insert into public.exercises (name, category, met, intensity, equipment_needed) values
   ('Walking (5 km/h)',        'cardio',      3.5, 'low',      false),
@@ -253,144 +390,93 @@ insert into public.foods (user_id, name, brand, serving_desc, serving_grams,
   (null, 'Pizza Margherita',             null, '1 slice (107g)',100, 266,11.4, 32.7,10.4, 2.3, 'custom'),
   (null, 'Burger (veg)',                  null, '1 piece (150g)',100, 230, 6.0, 30.0, 9.0, 2.5, 'custom'),
   (null, 'Fried Rice (veg)',             null, '1 cup (200g)',  100, 163, 3.0, 30.0, 3.8, 1.5, 'custom')
-on conflict do nothing;
+on conflict (lower(name)) where user_id is null do nothing;
 
--- ============================================================================
--- 5. DAILY SUMMARY VIEW (SECURITY INVOKER)
--- ============================================================================
+-- ── 6. IDEMPOTENT CONSTRAINTS & SANITY CHECKS ────────────────────────────────
 
-create or replace view public.daily_summary
-  with (security_invoker = true)
-as
-select
-  p.id as user_id,
-  d.day,
-  coalesce(f.cal_in,  0) as calories_in,
-  coalesce(e.cal_out, 0) as calories_out,
-  p.daily_calorie_goal,
-  coalesce(f.protein_g, 0) as protein_g,
-  coalesce(f.carbs_g,   0) as carbs_g,
-  coalesce(f.fat_g,     0) as fat_g
-from public.profiles p
-cross join lateral (
-  select logged_on as day from public.food_logs where user_id = p.id
-  union
-  select logged_on        from public.exercise_logs where user_id = p.id
-) d
-left join lateral (
-  select
-    sum(calories)  as cal_in,
-    sum(protein_g) as protein_g,
-    sum(carbs_g)   as carbs_g,
-    sum(fat_g)     as fat_g
-  from public.food_logs
-  where user_id = p.id and logged_on = d.day
-) f on true
-left join lateral (
-  select sum(calories_burned) as cal_out
-  from public.exercise_logs
-  where user_id = p.id and logged_on = d.day
-) e on true;
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'profiles_weight_kg_check') then
+    alter table public.profiles add constraint profiles_weight_kg_check
+      check (weight_kg is null or (weight_kg >= 20.0 and weight_kg <= 500.0));
+  end if;
 
--- ============================================================================
--- 6. NUMERIC CHECK CONSTRAINTS
--- ============================================================================
+  if not exists (select 1 from pg_constraint where conname = 'profiles_height_cm_check') then
+    alter table public.profiles add constraint profiles_height_cm_check
+      check (height_cm is null or (height_cm >= 50.0 and height_cm <= 260.0));
+  end if;
 
-do $$ begin
-  alter table public.profiles add constraint profiles_weight_kg_check
-    check (weight_kg is null or (weight_kg >= 20.0 and weight_kg <= 500.0));
-exception when duplicate_object then null;
-end $$;
+  if not exists (select 1 from pg_constraint where conname = 'profiles_daily_calorie_goal_check') then
+    alter table public.profiles add constraint profiles_daily_calorie_goal_check
+      check (daily_calorie_goal is null or (daily_calorie_goal >= 500 and daily_calorie_goal <= 10000));
+  end if;
 
-do $$ begin
-  alter table public.profiles add constraint profiles_height_cm_check
-    check (height_cm is null or (height_cm >= 50.0 and height_cm <= 260.0));
-exception when duplicate_object then null;
-end $$;
+  if not exists (select 1 from pg_constraint where conname = 'foods_calories_per_100g_check') then
+    alter table public.foods add constraint foods_calories_per_100g_check
+      check (calories_per_100g >= 0 and calories_per_100g <= 1000);
+  end if;
 
-do $$ begin
-  alter table public.profiles add constraint profiles_daily_calorie_goal_check
-    check (daily_calorie_goal is null or (daily_calorie_goal >= 500 and daily_calorie_goal <= 10000));
-exception when duplicate_object then null;
-end $$;
+  if not exists (select 1 from pg_constraint where conname = 'foods_serving_grams_check') then
+    alter table public.foods add constraint foods_serving_grams_check
+      check (serving_grams is null or (serving_grams > 0 and serving_grams <= 5000));
+  end if;
 
-do $$ begin
-  alter table public.foods add constraint foods_calories_per_100g_check
-    check (calories_per_100g >= 0 and calories_per_100g <= 1000);
-exception when duplicate_object then null;
-end $$;
+  if not exists (select 1 from pg_constraint where conname = 'foods_macros_check') then
+    alter table public.foods add constraint foods_macros_check
+      check (
+        (protein_g is null or (protein_g >= 0 and protein_g <= 100)) and
+        (carbs_g is null or (carbs_g >= 0 and carbs_g <= 100)) and
+        (fat_g is null or (fat_g >= 0 and fat_g <= 100)) and
+        (fiber_g is null or (fiber_g >= 0 and fiber_g <= 100))
+      );
+  end if;
 
-do $$ begin
-  alter table public.foods add constraint foods_serving_grams_check
-    check (serving_grams is null or (serving_grams > 0 and serving_grams <= 5000));
-exception when duplicate_object then null;
-end $$;
+  if not exists (select 1 from pg_constraint where conname = 'food_logs_quantity_grams_check') then
+    alter table public.food_logs add constraint food_logs_quantity_grams_check
+      check (quantity_grams > 0 and quantity_grams <= 5000);
+  end if;
 
-do $$ begin
-  alter table public.foods add constraint foods_macros_check
-    check (
-      (protein_g is null or (protein_g >= 0 and protein_g <= 100)) and
-      (carbs_g is null or (carbs_g >= 0 and carbs_g <= 100)) and
-      (fat_g is null or (fat_g >= 0 and fat_g <= 100)) and
-      (fiber_g is null or (fiber_g >= 0 and fiber_g <= 100))
-    );
-exception when duplicate_object then null;
-end $$;
+  if not exists (select 1 from pg_constraint where conname = 'food_logs_calories_check') then
+    alter table public.food_logs add constraint food_logs_calories_check
+      check (calories >= 0 and calories <= 20000);
+  end if;
 
-do $$ begin
-  alter table public.food_logs add constraint food_logs_quantity_grams_check
-    check (quantity_grams > 0 and quantity_grams <= 5000);
-exception when duplicate_object then null;
-end $$;
+  if not exists (select 1 from pg_constraint where conname = 'food_logs_macros_check') then
+    alter table public.food_logs add constraint food_logs_macros_check
+      check (
+        (protein_g is null or protein_g >= 0) and
+        (carbs_g is null or carbs_g >= 0) and
+        (fat_g is null or fat_g >= 0)
+      );
+  end if;
 
-do $$ begin
-  alter table public.food_logs add constraint food_logs_calories_check
-    check (calories >= 0 and calories <= 20000);
-exception when duplicate_object then null;
-end $$;
+  if not exists (select 1 from pg_constraint where conname = 'exercises_met_check') then
+    alter table public.exercises add constraint exercises_met_check
+      check (met > 0 and met <= 30.0);
+  end if;
 
-do $$ begin
-  alter table public.food_logs add constraint food_logs_macros_check
-    check (
-      (protein_g is null or protein_g >= 0) and
-      (carbs_g is null or carbs_g >= 0) and
-      (fat_g is null or fat_g >= 0)
-    );
-exception when duplicate_object then null;
-end $$;
+  if not exists (select 1 from pg_constraint where conname = 'exercise_logs_duration_min_check') then
+    alter table public.exercise_logs add constraint exercise_logs_duration_min_check
+      check (duration_min > 0 and duration_min <= 600);
+  end if;
 
-do $$ begin
-  alter table public.exercises add constraint exercises_met_check
-    check (met > 0 and met <= 30.0);
-exception when duplicate_object then null;
-end $$;
+  if not exists (select 1 from pg_constraint where conname = 'exercise_logs_calories_burned_check') then
+    alter table public.exercise_logs add constraint exercise_logs_calories_burned_check
+      check (calories_burned >= 0 and calories_burned <= 15000);
+  end if;
 
-do $$ begin
-  alter table public.exercise_logs add constraint exercise_logs_duration_min_check
-    check (duration_min > 0 and duration_min <= 600);
-exception when duplicate_object then null;
-end $$;
+  if not exists (select 1 from pg_constraint where conname = 'weight_logs_weight_kg_check') then
+    alter table public.weight_logs add constraint weight_logs_weight_kg_check
+      check (weight_kg >= 20.0 and weight_kg <= 500.0);
+  end if;
 
-do $$ begin
-  alter table public.exercise_logs add constraint exercise_logs_calories_burned_check
-    check (calories_burned >= 0 and calories_burned <= 15000);
-exception when duplicate_object then null;
-end $$;
+  if not exists (select 1 from pg_constraint where conname = 'burn_plans_calories_check') then
+    alter table public.burn_plans add constraint burn_plans_calories_check
+      check (calories_to_burn > 0 and calories_to_burn <= 50000);
+  end if;
 
-do $$ begin
-  alter table public.weight_logs add constraint weight_logs_weight_kg_check
-    check (weight_kg >= 20.0 and weight_kg <= 500.0);
-exception when duplicate_object then null;
-end $$;
-
-do $$ begin
-  alter table public.burn_plans add constraint burn_plans_calories_check
-    check (calories_to_burn > 0 and calories_to_burn <= 50000);
-exception when duplicate_object then null;
-end $$;
-
-do $$ begin
-  alter table public.burn_plans add constraint burn_plans_days_check
-    check (days >= 1 and days <= 90);
-exception when duplicate_object then null;
+  if not exists (select 1 from pg_constraint where conname = 'burn_plans_days_check') then
+    alter table public.burn_plans add constraint burn_plans_days_check
+      check (days >= 1 and days <= 90);
+  end if;
 end $$;
