@@ -98,7 +98,7 @@ export function DashboardScreen({ data }: DashboardScreenProps) {
           </div>
           <MacroBar proteinG={proteinG} carbsG={carbsG} fatG={fatG} />
 
-          {/* Net Energy & Surplus Banner */}
+          {/* Net Energy Banner */}
           <NetEnergyBanner metrics={metrics} />
         </div>
       </div>

@@ -38,7 +38,7 @@ export function DeleteAccountModal({
           <span>Danger Zone</span>
         </div>
         <p className="text-xs text-red-600 leading-relaxed">
-          Permanently delete your profile and all associated food, exercise, weight logs, and burn plans. This action cannot be undone.
+          Permanently delete your profile and all associated food, exercise, weight logs, and saved activity plans. This action cannot be undone.
         </p>
         <Button
           variant="danger"

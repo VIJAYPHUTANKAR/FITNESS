@@ -68,7 +68,7 @@ export function WeighInCard({
         </div>
         <div className="space-y-2 text-gray-600">
           <div className="flex justify-between py-1 border-b border-gray-50">
-            <span>BMR (Base Burn):</span>
+            <span>BMR (Basal Metabolic Rate):</span>
             <span className="font-semibold text-gray-900">{bmr} kcal</span>
           </div>
           <div className="flex justify-between py-1 border-b border-gray-50">
@@ -76,7 +76,7 @@ export function WeighInCard({
             <span className="font-semibold text-gray-900">{tdee} kcal</span>
           </div>
           <div className="flex justify-between py-1">
-            <span>Goal Deficit/Surplus:</span>
+            <span>Goal Adjustment:</span>
             <span className="font-semibold text-emerald-700">
               {goalType === 'lose' ? '-400 kcal' : goalType === 'gain' ? '+300 kcal' : '0 kcal'}
             </span>

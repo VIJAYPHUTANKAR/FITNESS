@@ -53,9 +53,9 @@ export function OnboardingStep3({
         </label>
         <div className="grid grid-cols-3 gap-2">
           {[
-            { id: 'lose', label: 'Lose Fat', desc: '-400 kcal deficit' },
+            { id: 'lose', label: 'Fat Loss', desc: '-400 kcal below maintenance' },
             { id: 'maintain', label: 'Maintain', desc: 'At maintenance' },
-            { id: 'gain', label: 'Gain Muscle', desc: '+300 kcal surplus' },
+            { id: 'gain', label: 'Gain Muscle', desc: '+300 kcal above maintenance' },
           ].map(({ id, label, desc }) => (
             <button
               key={id}

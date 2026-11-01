@@ -1,5 +1,5 @@
 /**
- * NetEnergyBanner: Visual indicator of net caloric surplus or deficit based on BMR baseline
+ * NetEnergyBanner: Visual indicator of net energy intake and expenditure based on BMR baseline
  * maintenance and logged workout expenditure. Rendered inside DashboardScreen.
  */
 
@@ -47,11 +47,11 @@ export function NetEnergyBanner({ metrics }: NetEnergyBannerProps) {
               {hasProfileMetrics ? (
                 energyBalance > 0 ? (
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-100 text-orange-800">
-                    Surplus: +{energyBalance} kcal
+                    Net: +{energyBalance} kcal
                   </span>
                 ) : (
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                    Deficit: {energyBalance} kcal
+                    Net: {energyBalance} kcal
                   </span>
                 )
               ) : (
@@ -82,7 +82,7 @@ export function NetEnergyBanner({ metrics }: NetEnergyBannerProps) {
               </div>
             ) : (
               <p className="text-xs text-amber-700">
-                Please complete onboarding to compute your physical baseline maintenance and energy surplus accurately.
+                Please complete onboarding to compute your physical baseline maintenance and net energy accurately.
               </p>
             )}
           </div>
