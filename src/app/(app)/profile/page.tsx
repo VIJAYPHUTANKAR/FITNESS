@@ -14,6 +14,7 @@ import {
   type GoalType,
 } from '@/lib/calc/bmr';
 import { todayISO, formatSupabaseError } from '@/lib/utils';
+import { csvCell, fetchAllPages } from '@/lib/export/csv';
 import { ProfileFormSchema, WeightLogFormSchema } from '@/lib/validation/schemas';
 import { Button } from '@/components/ui/Button';
 import {
@@ -185,50 +186,113 @@ export default function ProfilePage() {
 
   async function handleExportData() {
     setExporting(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    setErrorMsg(null);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        setExporting(false);
+        return;
+      }
+
+      // 1. Fetch food_logs paginated with deterministic order
+      const foodLogs = await fetchAllPages(async (from, to) => {
+        const { data, error } = await supabase
+          .from('food_logs')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('logged_on', { ascending: false })
+          .order('id', { ascending: false })
+          .range(from, to);
+        return { data, error };
+      });
+
+      // 2. Fetch exercise_logs paginated with deterministic order
+      const exerciseLogs = await fetchAllPages(async (from, to) => {
+        const { data, error } = await supabase
+          .from('exercise_logs')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('logged_on', { ascending: false })
+          .order('id', { ascending: false })
+          .range(from, to);
+        return { data, error };
+      });
+
+      // 3. Fetch weight_logs paginated with deterministic order
+      const weightLogs = await fetchAllPages(async (from, to) => {
+        const { data, error } = await supabase
+          .from('weight_logs')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('logged_on', { ascending: false })
+          .order('id', { ascending: false })
+          .range(from, to);
+        return { data, error };
+      });
+
+      let csvContent = 'DATA TYPE,DATE,NAME,AMOUNT,UNIT,CALORIES,PROTEIN(g),CARBS(g),FAT(g)\n';
+
+      for (const f of foodLogs) {
+        csvContent +=
+          [
+            csvCell('FOOD'),
+            csvCell(f.logged_on),
+            csvCell(f.food_name),
+            csvCell(f.quantity_grams, true),
+            csvCell('g'),
+            csvCell(f.calories, true),
+            csvCell(f.protein_g ?? 0, true),
+            csvCell(f.carbs_g ?? 0, true),
+            csvCell(f.fat_g ?? 0, true),
+          ].join(',') + '\n';
+      }
+
+      for (const e of exerciseLogs) {
+        csvContent +=
+          [
+            csvCell('EXERCISE'),
+            csvCell(e.logged_on),
+            csvCell(e.exercise_name),
+            csvCell(e.duration_min, true),
+            csvCell('min'),
+            csvCell(e.calories_burned, true),
+            '',
+            '',
+            '',
+          ].join(',') + '\n';
+      }
+
+      for (const w of weightLogs) {
+        csvContent +=
+          [
+            csvCell('WEIGHT'),
+            csvCell(w.logged_on),
+            csvCell('Weight Record'),
+            csvCell(w.weight_kg, true),
+            csvCell('kg'),
+            '',
+            '',
+            '',
+            '',
+          ].join(',') + '\n';
+      }
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `fitcalc_data_export_${todayISO()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Export failed. Please try again.';
+      setErrorMsg(msg);
+    } finally {
       setExporting(false);
-      return;
     }
-
-    const [foodsRes, exerciseRes, weightRes] = await Promise.all([
-      supabase.from('food_logs').select('*').eq('user_id', user.id).order('logged_on', { ascending: false }),
-      supabase.from('exercise_logs').select('*').eq('user_id', user.id).order('logged_on', { ascending: false }),
-      supabase.from('weight_logs').select('*').eq('user_id', user.id).order('logged_on', { ascending: false }),
-    ]);
-
-    let csvContent = 'DATA TYPE,DATE,NAME,AMOUNT,UNIT,CALORIES,PROTEIN(g),CARBS(g),FAT(g)\n';
-
-    // Foods
-    if (foodsRes.data) {
-      for (const f of foodsRes.data) {
-        csvContent += `"FOOD","${f.logged_on}","${f.food_name.replace(/"/g, '""')}",${f.quantity_grams},"g",${f.calories},${f.protein_g ?? 0},${f.carbs_g ?? 0},${f.fat_g ?? 0}\n`;
-      }
-    }
-
-    // Exercises
-    if (exerciseRes.data) {
-      for (const e of exerciseRes.data) {
-        csvContent += `"EXERCISE","${e.logged_on}","${e.exercise_name.replace(/"/g, '""')}",${e.duration_min},"min",${e.calories_burned},,,,\n`;
-      }
-    }
-
-    // Weight
-    if (weightRes.data) {
-      for (const w of weightRes.data) {
-        csvContent += `"WEIGHT","${w.logged_on}","Weight Record",${w.weight_kg},"kg",,,,,\n`;
-      }
-    }
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `fitcalc_data_export_${todayISO()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setExporting(false);
   }
 
   const isDeleteConfirmed =
