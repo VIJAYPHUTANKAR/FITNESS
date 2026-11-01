@@ -1,6 +1,7 @@
 // src/lib/supabase/middleware.ts
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { isProtectedPath, isAuthPath } from '@/lib/auth/routes';
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -28,21 +29,15 @@ export async function updateSession(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   // Protected routes: redirect unauthenticated users to /login
-  const protectedPaths = ['/dashboard', '/log', '/burn-calculator', '/history', '/profile', '/foods', '/onboarding'];
-  const isProtected = protectedPaths.some(
-    (p) => request.nextUrl.pathname === p || request.nextUrl.pathname.startsWith(`${p}/`)
-  );
-
-  if (!user && isProtected) {
+  if (!user && isProtectedPath(request.nextUrl.pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
+    url.searchParams.set('next', request.nextUrl.pathname);
     return NextResponse.redirect(url);
   }
 
   // Redirect authenticated users away from auth pages
-  const authPaths = ['/login', '/signup'];
-  const isAuthPage = authPaths.some(p => request.nextUrl.pathname === p);
-  if (user && isAuthPage) {
+  if (user && isAuthPath(request.nextUrl.pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     return NextResponse.redirect(url);
