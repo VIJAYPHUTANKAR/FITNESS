@@ -22,11 +22,11 @@ export function CustomFoodList({
   onDeleteFood,
 }: CustomFoodListProps) {
   return (
-    <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm space-y-4">
-      <h2 className="font-bold text-gray-900 text-base">Your Custom Items ({foods.length})</h2>
+    <div className="bg-plate rounded-2xl border border-steel-200/80 p-6 shadow-xs space-y-4">
+      <h2 className="font-heading font-semibold text-ink text-base">Your Custom Items ({foods.length})</h2>
 
       {deleteError && (
-        <div className="p-3 text-xs bg-red-50 text-red-600 rounded-xl flex items-center gap-2">
+        <div className="p-3 text-xs bg-chukandar-50 text-chukandar-700 border border-chukandar-200 rounded-xl flex items-center gap-2">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{deleteError}</span>
         </div>
@@ -34,21 +34,21 @@ export function CustomFoodList({
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="h-7 w-7 text-emerald-600 animate-spin" />
+          <Loader2 className="h-7 w-7 text-haldi-600 animate-spin" />
         </div>
       ) : foods.length === 0 ? (
-        <div className="text-center py-12 text-gray-400 space-y-2">
-          <Sparkles className="h-10 w-10 mx-auto text-gray-200" />
+        <div className="text-center py-12 text-ink/50 space-y-2">
+          <Sparkles className="h-10 w-10 mx-auto text-steel-300" />
           <p className="text-sm">No custom foods created yet.</p>
-          <p className="text-xs text-gray-400">Click &ldquo;Add Custom Food&rdquo; to add your own dishes.</p>
+          <p className="text-xs text-ink/40">Click &ldquo;Add Custom Food&rdquo; to add your own dishes.</p>
         </div>
       ) : (
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-steel-100">
           {foods.map((food) => (
             <div key={food.id} className="py-3 flex items-center justify-between gap-4">
               <div className="min-w-0">
-                <p className="font-semibold text-gray-900 text-sm truncate">{food.name}</p>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="font-semibold text-ink text-sm truncate">{food.name}</p>
+                <p className="text-xs text-ink/60 mt-0.5 tabular-nums">
                   {food.serving_desc} • {Math.round(Number(food.calories_per_100g))} kcal/100g
                   {food.protein_g != null && ` • P: ${food.protein_g}g`}
                   {food.carbs_g != null && ` • C: ${food.carbs_g}g`}
@@ -58,7 +58,7 @@ export function CustomFoodList({
               <div className="flex items-center gap-3 shrink-0">
                 <button
                   onClick={() => onDeleteFood(food.id)}
-                  className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                  className="p-1.5 text-ink/40 hover:text-chukandar-600 rounded-lg hover:bg-steel-100 transition-colors"
                   title="Delete item"
                 >
                   <Trash2 className="h-4 w-4" />

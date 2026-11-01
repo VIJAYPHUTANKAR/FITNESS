@@ -49,12 +49,12 @@ export function CustomFoodsScreen() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <Link href="/log/food" className="text-gray-400 hover:text-gray-600">
+            <Link href="/log/food" className="text-ink/50 hover:text-ink transition-colors">
               <ChevronLeft className="h-5 w-5" />
             </Link>
-            <h1 className="text-2xl font-bold text-gray-900">Custom Foods Library</h1>
+            <h1 className="text-2xl font-heading font-bold text-ink">Custom Foods Library</h1>
           </div>
-          <p className="text-xs text-gray-500 mt-1 pl-7">
+          <p className="text-xs text-ink/60 mt-1 pl-7">
             Add homemade meals, regional Indian recipes, or specific brands.
           </p>
         </div>

@@ -27,41 +27,41 @@ export function ExerciseDateBar({
   const isToday = loggedOn === todayISO();
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-plate p-4 rounded-2xl border border-steel-200/80 shadow-xs">
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" onClick={() => changeDate(-1)} aria-label="Previous day">
-          <ChevronLeft className="h-5 w-5" />
+        <Button variant="quiet" size="sm" onClick={() => changeDate(-1)} aria-label="Previous day">
+          <ChevronLeft className="h-4 w-4" />
         </Button>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gray-50 border border-gray-200">
-          <Calendar className="h-4 w-4 text-emerald-600" />
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-steel-100/60 border border-steel-200 text-ink">
+          <Calendar className="h-4 w-4 text-haldi-600" />
           <input
             type="date"
             value={loggedOn}
             onChange={(e) => e.target.value && setLoggedOn(e.target.value)}
-            className="text-sm font-semibold text-gray-800 bg-transparent focus:outline-none"
+            className="text-sm font-medium text-ink bg-transparent focus:outline-none"
           />
         </div>
-        <Button variant="ghost" size="sm" onClick={() => changeDate(1)} aria-label="Next day">
-          <ChevronRight className="h-5 w-5" />
+        <Button variant="quiet" size="sm" onClick={() => changeDate(1)} aria-label="Next day">
+          <ChevronRight className="h-4 w-4" />
         </Button>
         {!isToday && (
           <button
             type="button"
             onClick={() => setLoggedOn(todayISO())}
-            className="text-xs font-semibold text-emerald-600 hover:underline ml-1"
+            className="text-xs font-semibold text-haldi-700 hover:underline ml-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-haldi-500 rounded"
           >
             Today
           </button>
         )}
       </div>
 
-      <div className="flex items-center gap-4 text-xs font-medium text-gray-600">
-        <div className="flex items-center gap-1 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-100 text-amber-800 font-bold">
-          <Flame className="h-3.5 w-3.5" />
+      <div className="flex items-center gap-4 text-xs font-medium text-ink/70">
+        <div className="flex items-center gap-1 bg-haldi-100/60 px-3 py-1.5 rounded-xl border border-haldi-200 text-ink font-bold tabular-nums">
+          <Flame className="h-3.5 w-3.5 text-haldi-600" />
           {totalBurned} kcal burned
         </div>
-        <div className="text-gray-500">
-          Duration: <strong className="text-gray-800">{totalMinutes} min</strong>
+        <div className="text-ink/60 tabular-nums">
+          Duration: <strong className="text-ink">{totalMinutes} min</strong>
         </div>
       </div>
     </div>

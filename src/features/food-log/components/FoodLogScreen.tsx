@@ -1,16 +1,17 @@
 /**
  * FoodLogScreen: Interactive food logging view featuring date navigation, meal section cards,
- * inline editing/deletion, and modal food search. Rendered by src/app/(app)/log/food/page.tsx.
+ * inline editing/deletion, and Sheet-based modal food search. Rendered by src/app/(app)/log/food/page.tsx.
  */
 
 'use client';
 
 import { Suspense } from 'react';
-import { Loader2, Utensils, X } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useFoodLog } from '../hooks/useFoodLog';
 import { FoodLogDateBar } from './FoodLogDateBar';
 import { MealSection } from './MealSection';
 import { FoodSearch } from './FoodSearch';
+import { Sheet } from '@/components/ui/Sheet';
 import type { MealSectionConfig } from '../types';
 
 const MEAL_CONFIGS: MealSectionConfig[] = [
@@ -50,7 +51,7 @@ function FoodLogContent() {
 
       {loading ? (
         <div className="flex justify-center py-16">
-          <Loader2 className="h-8 w-8 text-emerald-600 animate-spin" />
+          <Loader2 className="h-8 w-8 text-haldi-600 animate-spin" />
         </div>
       ) : (
         <div className="space-y-4">
@@ -68,34 +69,22 @@ function FoodLogContent() {
         </div>
       )}
 
-      {/* Add Food Modal */}
-      {activeModalMeal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6 border border-gray-100 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-              <div className="flex items-center gap-2">
-                <Utensils className="h-5 w-5 text-emerald-600" />
-                <h3 className="font-bold text-gray-900 text-base capitalize">
-                  Add to {activeModalMeal}
-                </h3>
-              </div>
-              <button
-                onClick={() => setActiveModalMeal(null)}
-                className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <FoodSearch
-              mealType={activeModalMeal}
-              loggedOn={loggedOn}
-              onSuccess={fetchLogs}
-              onClose={() => setActiveModalMeal(null)}
-            />
-          </div>
-        </div>
-      )}
+      {/* Add Food Sheet Modal */}
+      <Sheet
+        open={activeModalMeal !== null}
+        onClose={() => setActiveModalMeal(null)}
+        title={activeModalMeal ? `Add to ${activeModalMeal}` : 'Add Food'}
+        description="Search our Indian food database or add custom items."
+      >
+        {activeModalMeal && (
+          <FoodSearch
+            mealType={activeModalMeal}
+            loggedOn={loggedOn}
+            onSuccess={fetchLogs}
+            onClose={() => setActiveModalMeal(null)}
+          />
+        )}
+      </Sheet>
     </div>
   );
 }
@@ -104,7 +93,7 @@ export function FoodLogScreen() {
   return (
     <Suspense fallback={
       <div className="flex justify-center py-16">
-        <Loader2 className="h-8 w-8 text-emerald-600 animate-spin" />
+        <Loader2 className="h-8 w-8 text-haldi-600 animate-spin" />
       </div>
     }>
       <FoodLogContent />

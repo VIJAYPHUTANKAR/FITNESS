@@ -68,22 +68,22 @@ export function FoodSearch({ mealType, loggedOn, onSuccess, onClose }: FoodSearc
     <div className="space-y-4">
       {/* Search Input */}
       <div className="relative">
-        <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-ink/40" />
         <input
           type="text"
-          placeholder="Search food (e.g. roti, dal, banana, oats, paneer)..."
+          placeholder="Search food (e.g. roti, dal, paneer, oats, banana)..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm"
+          className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-steel-300 bg-plate text-ink placeholder:text-ink/40 focus:outline-none focus:ring-2 focus:ring-haldi-500 focus:border-haldi-500 text-sm"
           autoFocus
         />
         {loading && (
-          <Loader2 className="absolute right-3.5 top-3.5 h-4 w-4 text-emerald-600 animate-spin" />
+          <Loader2 className="absolute right-3.5 top-3.5 h-4 w-4 text-haldi-600 animate-spin" />
         )}
       </div>
 
       {error && (
-        <div className="p-3 text-xs bg-red-50 text-red-600 rounded-lg flex items-center gap-2">
+        <div className="p-3 text-xs bg-chukandar-50 text-chukandar-700 border border-chukandar-200 rounded-xl flex items-center gap-2">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
@@ -104,26 +104,26 @@ export function FoodSearch({ mealType, loggedOn, onSuccess, onClose }: FoodSearc
 
       {/* Search Results List */}
       {!selectedFood && results.length > 0 && (
-        <div className="max-h-60 overflow-y-auto divide-y divide-gray-100 rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div className="max-h-60 overflow-y-auto divide-y divide-steel-100 rounded-xl border border-steel-200 bg-plate shadow-xs">
           {results.map((food, idx) => (
             <button
               key={`${food.name}-${idx}`}
               onClick={() => setSelectedFood(food)}
-              className="w-full text-left p-3 hover:bg-emerald-50/50 flex justify-between items-center transition-colors text-sm"
+              className="w-full text-left p-3 hover:bg-steel-50 flex justify-between items-center transition-colors text-sm"
             >
               <div className="truncate pr-2">
-                <span className="font-medium text-gray-900 block truncate">{food.name}</span>
-                <span className="text-xs text-gray-500">
+                <span className="font-medium text-ink block truncate">{food.name}</span>
+                <span className="text-xs text-ink/60 tabular-nums">
                   {food.serving_desc} • P:{food.protein_g}g C:{food.carbs_g}g F:{food.fat_g}g
                 </span>
                 {food.source === 'openfoodfacts' && (
-                  <span className="block text-[10px] text-gray-400 mt-0.5">
+                  <span className="block text-[10px] text-ink/40 mt-0.5">
                     Source:{' '}
                     <a
                       href="https://world.openfoodfacts.org"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-emerald-600 hover:underline"
+                      className="text-haldi-700 hover:underline"
                       onClick={(e) => e.stopPropagation()}
                     >
                       Open Food Facts (ODbL)
@@ -131,11 +131,11 @@ export function FoodSearch({ mealType, loggedOn, onSuccess, onClose }: FoodSearc
                   </span>
                 )}
               </div>
-              <div className="shrink-0 text-right">
-                <span className="font-semibold text-emerald-600 text-xs">
+              <div className="shrink-0 text-right tabular-nums">
+                <span className="font-semibold text-ink text-xs">
                   {Math.round(food.calories_per_100g)} kcal
                 </span>
-                <span className="block text-[10px] text-gray-400">/ 100g</span>
+                <span className="block text-[10px] text-ink/40">/ 100g</span>
               </div>
             </button>
           ))}
@@ -144,11 +144,11 @@ export function FoodSearch({ mealType, loggedOn, onSuccess, onClose }: FoodSearc
 
       {/* No results prompt */}
       {!selectedFood && query.length >= 2 && !loading && results.length === 0 && (
-        <div className="text-center p-6 bg-gray-50 rounded-2xl border border-gray-100">
-          <p className="text-sm text-gray-600">No matching food items found.</p>
+        <div className="text-center p-6 bg-steel-50 rounded-2xl border border-steel-200">
+          <p className="text-sm text-ink/70">No matching food items found.</p>
           <Link
             href="/foods/custom"
-            className="inline-flex items-center gap-1.5 mt-2 text-xs font-semibold text-emerald-600 hover:text-emerald-700"
+            className="inline-flex items-center gap-1.5 mt-2 text-xs font-semibold text-haldi-700 hover:text-haldi-800"
           >
             <Sparkles className="h-3.5 w-3.5" /> Create a custom food item
           </Link>
@@ -156,10 +156,10 @@ export function FoodSearch({ mealType, loggedOn, onSuccess, onClose }: FoodSearc
       )}
 
       {/* Custom food footer link */}
-      <div className="pt-2 border-t border-gray-100 text-center">
+      <div className="pt-2 border-t border-steel-200 text-center">
         <Link
           href="/foods/custom"
-          className="text-xs text-gray-500 hover:text-emerald-600 font-medium inline-flex items-center gap-1"
+          className="text-xs text-ink/60 hover:text-ink font-medium inline-flex items-center gap-1"
         >
           Can&apos;t find what you need? <span className="underline">Add a custom food</span>
         </Link>

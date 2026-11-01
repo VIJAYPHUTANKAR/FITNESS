@@ -99,27 +99,27 @@ export function SelectedFoodForm({
   }
 
   return (
-    <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-4 transition-all">
+    <div className="p-4 rounded-2xl bg-steel-50 border border-steel-200 space-y-4 transition-all">
       {error && (
-        <div className="p-2.5 text-xs bg-red-50 text-red-600 rounded-lg">
+        <div className="p-2.5 text-xs bg-chukandar-50 text-chukandar-700 border border-chukandar-200 rounded-xl">
           {error}
         </div>
       )}
 
       <div className="flex justify-between items-start gap-2">
         <div>
-          <p className="font-semibold text-gray-900 text-sm">{selectedFood.name}</p>
+          <p className="font-heading font-semibold text-ink text-sm">{selectedFood.name}</p>
           {selectedFood.brand && (
-            <p className="text-xs text-gray-500">{selectedFood.brand}</p>
+            <p className="text-xs text-ink/60">{selectedFood.brand}</p>
           )}
           {selectedFood.source === 'openfoodfacts' && (
-            <p className="text-[10px] text-gray-500 mt-0.5">
+            <p className="text-[10px] text-ink/50 mt-0.5">
               Source:{' '}
               <a
                 href="https://world.openfoodfacts.org"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-emerald-700 underline"
+                className="text-haldi-700 underline"
               >
                 Open Food Facts (ODbL)
               </a>
@@ -128,7 +128,7 @@ export function SelectedFoodForm({
         </div>
         <button
           onClick={onCancel}
-          className="text-xs text-gray-400 hover:text-gray-600"
+          className="text-xs text-ink/50 hover:text-ink underline"
         >
           Change
         </button>
@@ -136,7 +136,7 @@ export function SelectedFoodForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-medium text-ink/70 mb-1">
             Portion (grams / ml)
           </label>
           <input
@@ -145,26 +145,35 @@ export function SelectedFoodForm({
             max="5000"
             value={grams}
             onChange={(e) => setGrams(Math.max(1, Math.min(5000, Number(e.target.value) || 0)))}
-            className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            className="w-full px-3 py-2 rounded-xl border border-steel-300 bg-plate text-ink text-sm tabular-nums focus:ring-2 focus:ring-haldi-500 focus:outline-none"
           />
         </div>
         <div className="flex flex-col justify-end">
-          <span className="text-xs text-gray-500">Estimated Energy</span>
-          <span className="text-xl font-bold text-emerald-700">
-            {Math.round(scaled.calories)} <span className="text-xs font-normal">kcal</span>
+          <span className="text-xs text-ink/60">Estimated Energy</span>
+          <span className="text-xl font-heading font-bold text-ink tabular-nums">
+            {Math.round(scaled.calories)} <span className="text-xs font-normal text-ink/60">kcal</span>
           </span>
         </div>
       </div>
 
-      <div className="flex items-center gap-4 text-xs text-gray-600 bg-white/70 p-2.5 rounded-xl border border-emerald-100">
-        <span>P: <strong>{scaled.protein_g.toFixed(1)}g</strong></span>
-        <span>C: <strong>{scaled.carbs_g.toFixed(1)}g</strong></span>
-        <span>F: <strong>{scaled.fat_g.toFixed(1)}g</strong></span>
+      <div className="flex items-center gap-4 text-xs text-ink/80 bg-plate p-2.5 rounded-xl border border-steel-200 tabular-nums">
+        <span className="flex items-center gap-1">
+          <span className="h-2 w-2 rounded-full bg-chukandar-500" />
+          P: <strong>{scaled.protein_g.toFixed(1)}g</strong>
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-2 w-2 rounded-full bg-haldi-500" />
+          C: <strong>{scaled.carbs_g.toFixed(1)}g</strong>
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-2 w-2 rounded-full bg-patta-500" />
+          F: <strong>{scaled.fat_g.toFixed(1)}g</strong>
+        </span>
       </div>
 
       <div className="flex gap-2 justify-end">
         {onClose && (
-          <Button variant="ghost" size="sm" onClick={onClose} disabled={logging}>
+          <Button variant="quiet" size="sm" onClick={onClose} disabled={logging}>
             Cancel
           </Button>
         )}

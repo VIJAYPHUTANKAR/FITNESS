@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { scaleMacros } from '@/lib/calc/macros';
+import { Pencil, Trash2, Check, X, Loader2 } from 'lucide-react';
 import type { FoodLog, MealType } from '@/types/database';
 
 interface FoodLogItemProps {
@@ -11,10 +12,10 @@ interface FoodLogItemProps {
 }
 
 const MEAL_BADGE: Record<NonNullable<MealType>, string> = {
-  breakfast: 'bg-amber-100 text-amber-800',
-  lunch:     'bg-green-100 text-green-800',
-  dinner:    'bg-indigo-100 text-indigo-800',
-  snack:     'bg-pink-100 text-pink-800',
+  breakfast: 'bg-haldi-100 text-haldi-800 border-haldi-200',
+  lunch:     'bg-patta-100 text-patta-800 border-patta-200',
+  dinner:    'bg-steel-200 text-steel-800 border-steel-300',
+  snack:     'bg-chukandar-100 text-chukandar-800 border-chukandar-200',
 };
 
 export default function FoodLogItem({ entry, onUpdate }: FoodLogItemProps) {
@@ -90,89 +91,85 @@ export default function FoodLogItem({ entry, onUpdate }: FoodLogItemProps) {
   }
 
   const mealClass =
-    entry.meal_type ? MEAL_BADGE[entry.meal_type] : 'bg-gray-100 text-gray-600';
+    entry.meal_type ? MEAL_BADGE[entry.meal_type] : 'bg-steel-100 text-ink/70 border-steel-200';
 
   return (
-    <div className="flex items-center justify-between gap-3 py-2 px-3 rounded-lg bg-white border border-gray-100 shadow-sm">
+    <div className="flex items-center justify-between gap-3 py-2.5 px-3 rounded-xl bg-plate-muted border border-steel-200/70">
       {/* Left: name + badge */}
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-gray-800 truncate">{entry.food_name}</p>
+        <p className="font-medium text-ink truncate text-sm">{entry.food_name}</p>
         <div className="flex items-center gap-2 mt-0.5">
           {entry.meal_type && (
-            <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${mealClass}`}>
+            <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full capitalize border ${mealClass}`}>
               {entry.meal_type}
             </span>
           )}
           {editing ? (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <input
                 type="number"
                 min="1"
                 step="1"
                 value={quantity}
                 onChange={e => setQuantity(e.target.value)}
-                className="w-20 text-sm border border-gray-300 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-16 text-xs bg-plate border border-steel-300 rounded px-1.5 py-0.5 text-ink focus:outline-none focus:ring-1 focus:ring-haldi-500"
               />
-              <span className="text-xs text-gray-500">g</span>
-              <span className="text-xs text-indigo-600 font-semibold ml-1">
+              <span className="text-xs text-ink/60">g</span>
+              <span className="text-xs text-haldi-700 font-semibold ml-1 tabular-nums">
                 ≈ {previewCalories} kcal
               </span>
             </div>
           ) : (
-            <span className="text-xs text-gray-500">{entry.quantity_grams} g</span>
+            <span className="text-xs text-ink/60 tabular-nums">{entry.quantity_grams} g</span>
           )}
         </div>
-        {error && <p className="text-xs text-red-500 mt-0.5">{error}</p>}
+        {error && <p className="text-xs text-chukandar-600 mt-0.5">{error}</p>}
       </div>
 
       {/* Right: calories + actions */}
-      <div className="flex items-center gap-1 shrink-0">
+      <div className="flex items-center gap-1.5 shrink-0">
         {!editing && (
-          <span className="text-sm font-semibold text-gray-700 mr-2">
+          <span className="text-sm font-semibold text-ink mr-2 tabular-nums">
             {entry.calories} kcal
           </span>
         )}
 
         {editing ? (
-          <>
+          <div className="flex items-center gap-1">
             <button
               onClick={handleSave}
               disabled={saving}
-              className="text-xs px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+              className="p-1 rounded bg-neel-700 text-white hover:bg-neel-800 disabled:opacity-50 transition-colors"
+              title="Save changes"
             >
-              {saving ? 'Saving…' : 'Save'}
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
             </button>
             <button
               onClick={() => { setEditing(false); setQuantity(String(entry.quantity_grams)); setError(null); }}
-              className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+              className="p-1 rounded bg-steel-200 text-ink/70 hover:bg-steel-300 transition-colors"
+              title="Cancel"
             >
-              Cancel
+              <X className="h-3.5 w-3.5" />
             </button>
-          </>
+          </div>
         ) : (
-          <>
+          <div className="flex items-center gap-1">
             <button
               onClick={() => setEditing(true)}
               title="Edit quantity"
-              className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-indigo-600 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-steel-100 text-ink/50 hover:text-ink transition-colors"
             >
-              {/* Pencil icon */}
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-                <path d="M2.695 14.763l-1.262 3.154a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.885L17.5 5.5a2.121 2.121 0 0 0-3-3L4.58 13.42a4 4 0 0 0-.885 1.343z" />
-              </svg>
+              <Pencil className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={handleDelete}
               disabled={deleting}
               title="Delete entry"
-              className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-red-500 disabled:opacity-50 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-steel-100 text-ink/50 hover:text-chukandar-600 disabled:opacity-50 transition-colors"
             >
-              {/* Trash icon */}
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-                <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193v-.443A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" />
-              </svg>
+              {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
             </button>
-          </>
+          </div>
         )}
       </div>
     </div>
