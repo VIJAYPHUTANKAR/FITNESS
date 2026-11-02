@@ -42,6 +42,8 @@ scratch
 test-results
 /playwright-report/
 playwright-report
+/output/
+output/
 .next
 node_modules
 coverage
