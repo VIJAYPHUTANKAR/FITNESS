@@ -17,11 +17,14 @@ export async function signInUser({ email, password }: SignInCredentials) {
  */
 export async function signUpUser({ email, password, fullName }: SignUpCredentials) {
   const supabase = createClient();
+  const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : undefined;
+
   return supabase.auth.signUp({
     email,
     password,
     options: {
       data: { full_name: fullName },
+      ...(redirectTo ? { emailRedirectTo: redirectTo } : {}),
     },
   });
 }
