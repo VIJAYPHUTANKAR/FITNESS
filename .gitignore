@@ -55,3 +55,10 @@ tsconfig.tsbuildinfo
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local Netlify folder
+.netlify
+
+# Agent skills cache
+.agents/
+

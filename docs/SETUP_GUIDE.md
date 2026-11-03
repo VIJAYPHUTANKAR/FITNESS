@@ -283,3 +283,4 @@ src/
 ### Q5: How do I export or delete all my data?
 - **CSV Export**: Go to **Profile** $\rightarrow$ click **Export Data (CSV)**. All food logs, workouts, and weigh-ins will download as a formula-injection-safe CSV file.
 - **Account Deletion**: Go to **Profile** $\rightarrow$ scroll to **Danger Zone** $\rightarrow$ click **Delete Account** $\rightarrow$ type `DELETE` to confirm. This calls the PostgreSQL `delete_my_account()` RPC function, permanently cascading deletion through all your records.
+
