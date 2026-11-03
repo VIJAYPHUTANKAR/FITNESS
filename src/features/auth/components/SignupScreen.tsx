@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { Mail, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { ThemeToggle } from '@/components/layout';
 import { useSignupForm } from '../hooks/useSignupForm';
 
 export function SignupScreen() {
@@ -29,8 +28,8 @@ export function SignupScreen() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-[var(--color-steel)] text-[var(--color-neel)]">
-        <div className="w-full max-w-md p-8 rounded-[20px] bg-[var(--color-plate)] border border-[var(--color-border)] text-center space-y-4 shadow-sm">
+      <div className="w-full max-w-md mx-auto">
+        <div className="rounded-[24px] bg-[var(--color-plate)] border border-[var(--color-border)] p-6 sm:p-8 text-center space-y-4 shadow-xs transition-colors">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-steel)] text-[var(--color-neel)] mx-auto">
             <Mail className="h-6 w-6" />
           </div>
@@ -44,7 +43,7 @@ export function SignupScreen() {
           <div className="pt-2">
             <Link
               href="/login"
-              className="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold rounded-[10px] bg-[var(--color-neel)] text-[var(--color-plate)] dark:text-[#12142B] min-h-[44px]"
+              className="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold rounded-[10px] bg-[var(--color-neel)] text-[var(--color-plate)] dark:text-[#12142B] min-h-[44px] hover:opacity-90 transition-opacity"
             >
               Back to sign in
             </Link>
@@ -55,155 +54,124 @@ export function SignupScreen() {
   }
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 bg-[var(--color-steel)] text-[var(--color-neel)]">
-      {/* Form column */}
-      <div className="flex flex-col justify-between p-6 sm:p-12">
-        <div className="flex justify-end">
-          <ThemeToggle />
+    <div className="w-full max-w-md mx-auto">
+      <div className="rounded-[24px] bg-[var(--color-plate)] border border-[var(--color-border)] p-6 sm:p-8 shadow-xs transition-colors">
+        <div className="mb-6 text-left">
+          <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-[var(--color-neel)] tracking-tight">
+            Create your account
+          </h1>
+          <p className="mt-1.5 text-xs sm:text-sm text-[var(--color-neel-muted)] leading-relaxed">
+            Track Indian meals, macros, and energy with clarity.
+          </p>
         </div>
 
-        <div className="w-full max-w-md mx-auto my-auto py-8">
-          <div className="mb-6 text-left">
-            <Link href="/" className="inline-flex items-center gap-2 mb-4">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-neel)] text-[var(--color-haldi)] font-heading font-bold text-xs">
-                FC
-              </div>
-              <span className="font-heading text-base font-bold text-[var(--color-neel)]">
-                FitCalc
-              </span>
-            </Link>
-            <h1 className="font-heading text-2xl font-bold text-[var(--color-neel)]">
-              Create your account
-            </h1>
-            <p className="mt-1 text-xs text-[var(--color-neel-muted)]">
-              Track Indian meals, macros, and energy with clarity.
-            </p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="rounded-[10px] bg-[var(--color-chukandar-subtle)] border border-[var(--color-chukandar)]/20 p-3 text-xs font-semibold text-[var(--color-chukandar)]">
+              {error}
+            </div>
+          )}
+
+          <div>
+            <Input
+              id="fullName"
+              label="Full name"
+              type="text"
+              autoComplete="name"
+              required
+              placeholder="Priya Sharma"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+            />
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="rounded-[10px] bg-[var(--color-chukandar-subtle)] border border-[var(--color-chukandar)]/20 p-3 text-xs font-semibold text-[var(--color-chukandar)]">
-                {error}
-              </div>
+          <div>
+            <Input
+              id="email"
+              label="Email address"
+              type="email"
+              autoComplete="email"
+              required
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+
+          <div className="relative">
+            <Input
+              id="password"
+              label="Password (min 8 characters)"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="new-password"
+              required
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              className="absolute right-3 top-8 text-[var(--color-neel-muted)] hover:text-[var(--color-neel)] p-1 min-h-[36px] min-w-[36px] flex items-center justify-center transition-colors"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+
+          <div className="relative">
+            <Input
+              id="confirmPassword"
+              label="Confirm password"
+              type={showConfirm ? 'text' : 'password'}
+              autoComplete="new-password"
+              required
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirm(!showConfirm)}
+              aria-label={showConfirm ? 'Hide confirm password' : 'Show confirm password'}
+              className="absolute right-3 top-8 text-[var(--color-neel-muted)] hover:text-[var(--color-neel)] p-1 min-h-[36px] min-w-[36px] flex items-center justify-center transition-colors"
+            >
+              {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full mt-2"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+                Creating account...
+              </>
+            ) : (
+              'Create Account'
             )}
+          </Button>
+        </form>
 
-            <div>
-              <Input
-                id="fullName"
-                label="Full name"
-                type="text"
-                autoComplete="name"
-                required
-                placeholder="Priya Sharma"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <Input
-                id="email"
-                label="Email address"
-                type="email"
-                autoComplete="email"
-                required
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-
-            <div className="relative">
-              <Input
-                id="password"
-                label="Password (min 8 characters)"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="new-password"
-                required
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                className="absolute right-3 top-8 text-[var(--color-neel-muted)] hover:text-[var(--color-neel)] p-1 min-h-[36px] min-w-[36px] flex items-center justify-center"
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-
-            <div className="relative">
-              <Input
-                id="confirmPassword"
-                label="Confirm password"
-                type={showConfirm ? 'text' : 'password'}
-                autoComplete="new-password"
-                required
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirm(!showConfirm)}
-                aria-label={showConfirm ? 'Hide confirm password' : 'Show confirm password'}
-                className="absolute right-3 top-8 text-[var(--color-neel-muted)] hover:text-[var(--color-neel)] p-1 min-h-[36px] min-w-[36px] flex items-center justify-center"
-              >
-                {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full mt-2"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
-                  Creating account...
-                </>
-              ) : (
-                'Create Account'
-              )}
-            </Button>
-          </form>
-
-          <p className="mt-6 text-center text-xs text-[var(--color-neel-muted)]">
-            Already have an account?{' '}
-            <Link
-              href="/login"
-              className="font-semibold text-[var(--color-neel)] underline hover:opacity-80"
-            >
-              Sign in
-            </Link>
-          </p>
+        <div className="mt-6 pt-5 border-t border-[var(--color-border)] text-center text-xs text-[var(--color-neel-muted)]">
+          Already have an account?{' '}
+          <Link
+            href="/login"
+            className="font-semibold text-[var(--color-neel)] underline hover:opacity-80"
+          >
+            Sign in
+          </Link>
         </div>
-
-        <p className="text-center text-xs text-[var(--color-neel-muted)]">
-          Estimated values only · Not medical advice
-        </p>
       </div>
 
-      {/* Quiet side panel */}
-      <div className="hidden lg:flex flex-col justify-between p-12 bg-[var(--color-plate)] border-l border-[var(--color-border)]">
-        <div className="space-y-4 max-w-md my-auto">
-          <span className="text-[11px] font-bold tracking-wider text-[#8A5200] dark:text-[var(--color-haldi)] uppercase">
-            Private & independent
-          </span>
-          <h2 className="font-heading text-3xl font-extrabold text-[var(--color-neel)] leading-tight">
-            Your data belongs to you. Export or delete anytime.
-          </h2>
-          <p className="text-xs text-[var(--color-neel-muted)] leading-relaxed">
-            Row-level security ensures complete tenant isolation. No data selling, no advertising trackers, and no unsolicited notifications.
-          </p>
-        </div>
-        <div className="flex items-center gap-3 text-xs text-[var(--color-neel-muted)]">
-          <span className="h-2 w-2 rounded-full bg-[var(--color-patta)]" />
-          <span>Strict adult-only (18+) health safety gate</span>
-        </div>
+      <div className="mt-4 text-center">
+        <p className="inline-flex items-center gap-1.5 text-[11px] text-[var(--color-neel-muted)]">
+          <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-patta)]" />
+          Strict 18+ health safety · Export or delete your data anytime
+        </p>
       </div>
     </div>
   );
