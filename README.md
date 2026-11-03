@@ -10,6 +10,8 @@
 
 **FitCalc** is an intentional, culturally attuned nutrition and physical activity tracker designed specifically for Indian diets and lifestyle realities. Rather than relying on Western calorie-counting tropes, neon gamification, or moralistic "burn-off" language, FitCalc frames daily energy intake around the traditional **Thali Plate** mental model—balancing energy in the center with proportional macronutrient *katoris* (bowls) along the rim.
 
+You may view more info in **DOCS** folder.
+
 Built with **Next.js 16 (App Router with Turbopack)**, **Tailwind CSS v4**, and **Supabase (PostgreSQL with Row Level Security)**, FitCalc pairs rigorous metabolic science with a calm, disciplined editorial user experience.
 
 ---
